@@ -241,7 +241,7 @@ export function TemplateDetailClient({
         </button>
       )}
 
-      <div className="flex justify-center py-4">
+      <div className="flex justify-center py-2">
         <Button
           size="icon-lg"
           className="rounded-full h-[88px] w-[88px] shadow-[0_0_20px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_25px_hsl(var(--primary)/0.6)] animate-pulse-slow"
@@ -251,21 +251,19 @@ export function TemplateDetailClient({
         </Button>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between px-2">
-          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Scheduled days
-          </h2>
-        </div>
-        <div className="p-5 rounded-3xl bg-card shadow-neu-extruded">
-          <div className="flex flex-wrap gap-2 justify-center">
+      <div className="space-y-2">
+        <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2 px-1">
+          <Calendar className="h-3.5 w-3.5" />
+          Scheduled days
+        </h2>
+        <div className="p-3 rounded-2xl bg-card shadow-neu-extruded">
+          <div className="flex flex-wrap gap-1.5 justify-center">
             {DAY_LABELS.map(({ value, label }) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => toggleDay(value)}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 ${
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-200 ${
                   scheduledDays.includes(value)
                     ? "bg-primary text-primary-foreground shadow-neu-extruded drop-shadow-[0_0_5px_rgba(255,100,0,0.5)]"
                     : "text-muted-foreground shadow-neu-inset bg-card active:scale-95"
