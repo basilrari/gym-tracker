@@ -1,0 +1,35 @@
+"use server";
+
+"use server";
+
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { endWorkout } from "@/lib/db/workouts";
+import { subDays } from "date-fns";
+
+export async function endWorkoutAction(workoutId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  await endWorkout(workoutId);
+
+  const now = new Date();
+  const sevenDaysAgo = subDays(now, 7);
+  const thirtyDaysAgo = subDays(now, 30);
+
+  await supabase.rpc("upsert_leaderboard_metrics", {
+    p_user_id: user.id,
+    p_period: "7d",
+    p_start_date: sevenDaysAgo.toISOString().slice(0, 10),
+    p_end_date: now.toISOString().slice(0, 10),
+  });
+  await supabase.rpc("upsert_leaderboard_metrics", {
+    p_user_id: user.id,
+    p_period: "30d",
+    p_start_date: thirtyDaysAgo.toISOString().slice(0, 10),
+    p_end_date: now.toISOString().slice(0, 10),
+  });
+
+  redirect(`/workout/${workoutId}/complete`);
+}
