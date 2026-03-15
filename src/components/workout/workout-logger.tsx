@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Plus, Minus, Flag, Square, Trophy, Trash2 } from "lucide-react";
+import { Check, Plus, Minus, Flag, Square, Trophy, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RestTimer } from "./rest-timer";
 import {
@@ -13,7 +13,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { saveSetAction } from "@/app/actions/sets";
+import { saveSetAction, updateSetAction, deleteSetAction } from "@/app/actions/sets";
 import { endWorkoutFromForm, deleteWorkoutFromForm } from "@/app/actions/end-workout";
 import type { WorkoutWithSets, TemplateWithExercises } from "@/lib/db/types";
 import type { ExerciseHistoryEntry } from "@/lib/db/exercises";
@@ -45,6 +45,10 @@ export function WorkoutLogger({
   const [weightIncreased, setWeightIncreased] = useState(false);
   const [endDialogOpen, setEndDialogOpen] = useState(false);
   const [endDialogStep, setEndDialogStep] = useState<EndDialogStep>("choice");
+  const [editingSetId, setEditingSetId] = useState<string | null>(null);
+  const [editSetWeight, setEditSetWeight] = useState(0);
+  const [editSetReps, setEditSetReps] = useState(1);
+  const [editSetIsFailure, setEditSetIsFailure] = useState(false);
 
   useEffect(() => {
     const start = new Date(workout.start_time).getTime();
@@ -122,6 +126,47 @@ export function WorkoutLogger({
     setEndDialogOpen(true);
   };
 
+  const startEditingSet = (set: typeof exerciseSets[0]) => {
+    setEditingSetId(set.id);
+    setEditSetWeight(set.weight_kg);
+    setEditSetReps(set.reps);
+    setEditSetIsFailure(set.is_failure);
+  };
+
+  const handleUpdateSet = async () => {
+    if (!editingSetId) return;
+    
+    try {
+      await updateSetAction(editingSetId, {
+        weight_kg: editSetWeight,
+        reps: editSetReps,
+        is_failure: editSetIsFailure,
+      });
+      
+      setSets((prev) =>
+        prev.map((s) =>
+          s.id === editingSetId
+            ? { ...s, weight_kg: editSetWeight, reps: editSetReps, is_failure: editSetIsFailure }
+            : s
+        )
+      );
+      setEditingSetId(null);
+    } catch (error) {
+      // Error handling removed - debug logging only
+    }
+  };
+
+  const handleDeleteSet = async (setId: string) => {
+    if (!confirm("Delete this set?")) return;
+    
+    try {
+      await deleteSetAction(setId);
+      setSets((prev) => prev.filter((s) => s.id !== setId));
+    } catch (error) {
+      // Error handling removed - debug logging only
+    }
+  };
+
   if (templateExercises.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 max-w-lg mx-auto">
@@ -174,11 +219,11 @@ export function WorkoutLogger({
               type="button"
               variant="ghost"
               size="icon"
-              className="h-12 w-12 rounded-full shadow-neu-extruded text-destructive hover:text-destructive active:shadow-neu-pressed"
+              className="h-14 w-14 rounded-full shadow-neu-extruded text-destructive hover:text-destructive active:shadow-neu-pressed touch-manipulation min-h-[56px] min-w-[56px]"
               onClick={openEndDialog}
               aria-label="End or discard workout"
             >
-              <Square className="h-5 w-5" />
+              <Square className="h-6 w-6" />
             </Button>
           </div>
         </div>
@@ -195,7 +240,7 @@ export function WorkoutLogger({
                 key={te.id}
                 type="button"
                 onClick={() => setCurrentExerciseIndex(i)}
-                className={`w-full text-left px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-250 break-words ${
+                className={`w-full text-left px-4 py-3 sm:py-4 rounded-2xl text-sm sm:text-base font-bold transition-all duration-250 break-words touch-manipulation min-h-[48px] ${
                   isActive
                     ? "text-primary shadow-neu-pressed bg-background/50"
                     : completed
@@ -232,15 +277,104 @@ export function WorkoutLogger({
                     key={s.id}
                     initial={{ opacity: 0, height: 0, scale: 0.9 }}
                     animate={{ opacity: 1, height: "auto", scale: 1 }}
-                    className="flex justify-between items-center gap-4 p-5 rounded-2xl shadow-neu-inset bg-card"
+                    className="flex justify-between items-center gap-3 p-4 rounded-2xl shadow-neu-inset bg-card min-h-[72px]"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="h-8 w-8 rounded-full shadow-neu-extruded flex items-center justify-center text-primary text-xs font-bold">
-                        {i + 1}
+                    {editingSetId === s.id ? (
+                      <div className="flex-1 flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 flex-1 min-w-[120px]">
+                          <input
+                            type="number"
+                            min={0}
+                            step={0.5}
+                            value={editSetWeight}
+                            onChange={(e) => setEditSetWeight(parseFloat(e.target.value) || 0)}
+                            className="w-16 h-10 rounded-lg shadow-neu-inset bg-card border-0 text-center text-sm font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[40px] touch-manipulation"
+                            aria-label="Edit weight"
+                          />
+                          <span className="text-sm text-muted-foreground">kg</span>
+                          <span className="text-muted-foreground mx-1">×</span>
+                          <input
+                            type="number"
+                            min={1}
+                            value={editSetReps}
+                            onChange={(e) => setEditSetReps(parseInt(e.target.value) || 1)}
+                            className="w-14 h-10 rounded-lg shadow-neu-inset bg-card border-0 text-center text-sm font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[40px] touch-manipulation"
+                            aria-label="Edit reps"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className={`h-10 w-10 rounded-full touch-manipulation min-h-[40px] min-w-[40px] ${editSetIsFailure ? "text-destructive shadow-neu-pressed bg-background/50" : "text-muted-foreground"}`}
+                            onClick={() => setEditSetIsFailure((f) => !f)}
+                            aria-label="Toggle failure"
+                          >
+                            <Flag className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-10 w-10 rounded-full text-primary touch-manipulation min-h-[40px] min-w-[40px]"
+                            onClick={handleUpdateSet}
+                            aria-label="Save changes"
+                          >
+                            <Check className="h-5 w-5" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-10 w-10 rounded-full text-muted-foreground hover:text-foreground touch-manipulation min-h-[40px] min-w-[40px]"
+                            onClick={() => setEditingSetId(null)}
+                            aria-label="Cancel editing"
+                          >
+                            <Minus className="h-5 w-5" />
+                          </Button>
+                        </div>
                       </div>
-                      <span className="font-bold text-lg">{s.weight_kg} kg <span className="text-muted-foreground text-sm font-normal mx-1">×</span> {s.reps}</span>
-                    </div>
-                    <Check className="h-5 w-5 text-primary drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)]" />
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="h-9 w-9 rounded-full shadow-neu-extruded flex items-center justify-center text-primary text-xs font-bold flex-shrink-0">
+                            {i + 1}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-bold text-base sm:text-lg truncate">
+                              {s.weight_kg} kg <span className="text-muted-foreground font-normal mx-1">×</span> {s.reps}
+                            </span>
+                            {s.is_failure && (
+                              <span className="text-[10px] text-destructive font-medium uppercase tracking-wider">Failure</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-10 w-10 rounded-full text-muted-foreground hover:text-foreground touch-manipulation min-h-[40px] min-w-[40px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                            onClick={() => startEditingSet(s)}
+                            aria-label="Edit set"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-10 w-10 rounded-full text-muted-foreground hover:text-destructive touch-manipulation min-h-[40px] min-w-[40px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleDeleteSet(s.id)}
+                            aria-label="Delete set"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <Check className="h-5 w-5 text-primary drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)] flex-shrink-0 ml-1" />
+                        </div>
+                      </>
+                    )}
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -248,19 +382,19 @@ export function WorkoutLogger({
 
             {/* Input Controls – weight and reps with manual entry + steppers */}
             {nextSetIndex < targetSets && (
-              <div className="p-6 rounded-3xl shadow-neu-extruded bg-card mt-auto space-y-8">
-                <div className="flex items-center justify-between px-2">
-                  <div className="flex flex-col items-center gap-3">
+              <div className="p-4 sm:p-6 rounded-3xl shadow-neu-extruded bg-card mt-auto space-y-6 sm:space-y-8">
+                <div className="flex items-center justify-between px-1 sm:px-2 gap-2">
+                  <div className="flex flex-col items-center gap-2 sm:gap-3 flex-1">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Weight (kg)</span>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4">
                       <Button
                         type="button"
                         size="icon"
                         variant="ghost"
-                        className="rounded-full h-12 w-12 shadow-neu-extruded active:shadow-neu-pressed"
+                        className="rounded-full h-12 w-12 sm:h-14 sm:w-14 shadow-neu-extruded active:shadow-neu-pressed touch-manipulation min-h-[48px] min-w-[48px]"
                         onClick={() => setWeight((w) => Math.max(0, w - 2.5))}
                       >
-                        <Minus className="h-5 w-5" />
+                        <Minus className="h-5 w-5 sm:h-6 sm:w-6" />
                       </Button>
                       <input
                         type="number"
@@ -271,34 +405,34 @@ export function WorkoutLogger({
                           const v = e.target.value === "" ? 0 : parseFloat(e.target.value);
                           setWeight(Number.isNaN(v) ? 0 : Math.max(0, v));
                         }}
-                        className="w-16 h-16 rounded-full shadow-neu-inset bg-card border-0 text-center text-xl font-bold text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-full shadow-neu-inset bg-card border-0 text-center text-xl sm:text-2xl font-bold text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation min-h-[64px] min-w-[64px]"
                         aria-label="Weight in kg"
                       />
                       <Button
                         type="button"
                         size="icon"
                         variant="ghost"
-                        className="rounded-full h-12 w-12 shadow-neu-extruded active:shadow-neu-pressed text-primary"
+                        className="rounded-full h-12 w-12 sm:h-14 sm:w-14 shadow-neu-extruded active:shadow-neu-pressed text-primary touch-manipulation min-h-[48px] min-w-[48px]"
                         onClick={() => setWeight((w) => w + 2.5)}
                       >
-                        <Plus className="h-5 w-5" />
+                        <Plus className="h-5 w-5 sm:h-6 sm:w-6" />
                       </Button>
                     </div>
                   </div>
 
-                  <div className="w-px h-24 bg-border/50 shadow-neu-inset rounded-full mx-2" />
+                  <div className="w-px h-20 sm:h-24 bg-border/50 shadow-neu-inset rounded-full mx-1 sm:mx-2" />
 
-                  <div className="flex flex-col items-center gap-3">
+                  <div className="flex flex-col items-center gap-2 sm:gap-3 flex-1">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Reps</span>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4">
                       <Button
                         type="button"
                         size="icon"
                         variant="ghost"
-                        className="rounded-full h-12 w-12 shadow-neu-extruded active:shadow-neu-pressed"
+                        className="rounded-full h-12 w-12 sm:h-14 sm:w-14 shadow-neu-extruded active:shadow-neu-pressed touch-manipulation min-h-[48px] min-w-[48px]"
                         onClick={() => setReps((r) => Math.max(1, r - 1))}
                       >
-                        <Minus className="h-5 w-5" />
+                        <Minus className="h-5 w-5 sm:h-6 sm:w-6" />
                       </Button>
                       <input
                         type="number"
@@ -309,39 +443,39 @@ export function WorkoutLogger({
                           const v = e.target.value === "" ? 1 : parseInt(e.target.value, 10);
                           setReps(Number.isNaN(v) ? 1 : Math.max(1, v));
                         }}
-                        className="w-16 h-16 rounded-full shadow-neu-inset bg-card border-0 text-center text-xl font-bold text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-full shadow-neu-inset bg-card border-0 text-center text-xl sm:text-2xl font-bold text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation min-h-[64px] min-w-[64px]"
                         aria-label="Reps"
                       />
                       <Button
                         type="button"
                         size="icon"
                         variant="ghost"
-                        className="rounded-full h-12 w-12 shadow-neu-extruded active:shadow-neu-pressed text-primary"
+                        className="rounded-full h-12 w-12 sm:h-14 sm:w-14 shadow-neu-extruded active:shadow-neu-pressed text-primary touch-manipulation min-h-[48px] min-w-[48px]"
                         onClick={() => setReps((r) => r + 1)}
                       >
-                        <Plus className="h-5 w-5" />
+                        <Plus className="h-5 w-5 sm:h-6 sm:w-6" />
                       </Button>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 pt-2">
+                <div className="flex items-center gap-3 sm:gap-4 pt-2">
                   <Button
                     type="button"
                     variant="ghost"
-                    className={`rounded-full h-14 px-6 flex-shrink-0 transition-all duration-200 ${
+                    className={`rounded-full h-14 px-4 sm:px-6 flex-shrink-0 transition-all duration-200 touch-manipulation min-h-[56px] ${
                       isFailure 
                         ? "shadow-neu-pressed text-destructive bg-background/50" 
                         : "shadow-neu-extruded text-muted-foreground"
                     }`}
                     onClick={() => setIsFailure((f) => !f)}
                   >
-                    <Flag className="h-4 w-4 mr-2" />
-                    Failure
+                    <Flag className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <span className="text-sm sm:text-base">Failure</span>
                   </Button>
                   
                   <Button
-                    className="flex-1 rounded-full h-14 text-lg font-bold shadow-[0_0_15px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] active:scale-[0.98] transition-all"
+                    className="flex-1 rounded-full h-14 text-base sm:text-lg font-bold shadow-[0_0_15px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] active:scale-[0.98] transition-all touch-manipulation min-h-[56px]"
                     onClick={handleSaveSet}
                     disabled={saving}
                   >
@@ -367,10 +501,10 @@ export function WorkoutLogger({
           </div>
         )}
 
-        <div className="flex gap-4 pt-4">
+        <div className="flex gap-3 sm:gap-4 pt-4">
           <Button
             variant="ghost"
-            className="flex-1 rounded-full h-12 shadow-neu-extruded active:shadow-neu-pressed disabled:opacity-30 disabled:shadow-neu-extruded"
+            className="flex-1 rounded-full h-12 sm:h-14 shadow-neu-extruded active:shadow-neu-pressed disabled:opacity-30 disabled:shadow-neu-extruded touch-manipulation min-h-[48px] text-sm sm:text-base"
             disabled={currentExerciseIndex === 0}
             onClick={() => setCurrentExerciseIndex((i) => Math.max(0, i - 1))}
           >
@@ -378,7 +512,7 @@ export function WorkoutLogger({
           </Button>
           <Button
             variant="ghost"
-            className="flex-1 rounded-full h-12 shadow-neu-extruded active:shadow-neu-pressed text-primary disabled:opacity-30 disabled:shadow-neu-extruded disabled:text-muted-foreground"
+            className="flex-1 rounded-full h-12 sm:h-14 shadow-neu-extruded active:shadow-neu-pressed text-primary disabled:opacity-30 disabled:shadow-neu-extruded disabled:text-muted-foreground touch-manipulation min-h-[48px] text-sm sm:text-base"
             disabled={currentExerciseIndex >= templateExercises.length - 1}
             onClick={() =>
               setCurrentExerciseIndex((i) =>

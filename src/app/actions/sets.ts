@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { insertSet } from "@/lib/db/sets";
+import { insertSet, updateSet, deleteSet } from "@/lib/db/sets";
 
 export async function saveSetAction(
   workoutId: string,
@@ -22,4 +22,29 @@ export async function saveSetAction(
   });
 
   return { set };
+}
+
+export async function updateSetAction(
+  setId: string,
+  data: {
+    weight_kg?: number;
+    reps?: number;
+    is_failure?: boolean;
+  }
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  await updateSet(setId, data);
+  return { success: true };
+}
+
+export async function deleteSetAction(setId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  await deleteSet(setId);
+  return { success: true };
 }

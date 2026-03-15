@@ -115,7 +115,7 @@ export function HomeClient({
             <div className="absolute -bottom-6 z-10 flex flex-col items-center gap-6">
               <Button
                 size="icon-lg"
-                className="rounded-full h-[72px] w-[72px] shadow-[0_0_20px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_25px_hsl(var(--primary)/0.6)] animate-pulse-slow text-primary-foreground"
+                className="rounded-full h-[72px] w-[72px] shadow-[0_0_20px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_25px_hsl(var(--primary)/0.6)] animate-pulse-slow text-primary-foreground touch-manipulation active:scale-[0.98] transition-transform min-h-[72px] min-w-[72px]"
                 onClick={() => startWorkoutAction(suggestedTemplate?.id, suggestedTemplate?.name)}
               >
                 <Play className="h-8 w-8 ml-1" fill="currentColor" />
@@ -123,7 +123,7 @@ export function HomeClient({
               <Button
                 variant="ghost"
                 size="sm"
-                className="rounded-full text-muted-foreground hover:text-foreground text-xs px-6 py-3"
+                className="rounded-full text-muted-foreground hover:text-foreground text-xs px-6 py-3 touch-manipulation active:scale-[0.98] transition-transform min-h-[40px]"
                 onClick={() => startWorkoutAction(null, "Custom workout")}
               >
                 Start empty workout
@@ -161,15 +161,15 @@ export function HomeClient({
                    initial={{ opacity: 0, x: -10 }}
                    animate={{ opacity: 1, x: 0 }}
                    transition={{ delay: i * 0.1 }}
-                   className="flex items-center justify-between gap-4 p-5 rounded-3xl bg-card shadow-neu-extruded active:shadow-neu-pressed active:scale-[0.98] transition-all cursor-pointer group"
+                   className="flex items-center justify-between gap-4 p-5 rounded-3xl bg-card shadow-neu-extruded active:shadow-neu-pressed active:scale-[0.98] transition-all cursor-pointer group touch-manipulation min-h-[80px]"
                    onClick={() => startWorkoutAction(t.id, t.name)}
                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium group-hover:text-primary transition-colors break-words">{t.name}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 break-words">{t.description || "Custom workout"}</p>
+                    <div className="min-w-0 flex-1 py-1">
+                      <p className="font-medium group-hover:text-primary transition-colors break-words text-base sm:text-lg leading-tight">{t.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1 break-words">{t.description || "Custom workout"}</p>
                     </div>
-                    <div className="flex items-center justify-center h-10 w-10 rounded-full shadow-neu-inset bg-card group-hover:shadow-neu-extruded transition-all">
-                      <Play className="h-4 w-4 text-primary group-hover:drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)] ml-0.5" />
+                    <div className="flex items-center justify-center h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-neu-inset bg-card group-hover:shadow-neu-extruded transition-all flex-shrink-0">
+                      <Play className="h-5 w-5 sm:h-6 sm:w-6 text-primary group-hover:drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)] ml-0.5" />
                     </div>
                  </motion.div>
                ))}
