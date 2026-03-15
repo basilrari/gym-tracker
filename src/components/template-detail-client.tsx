@@ -61,6 +61,11 @@ export function TemplateDetailClient({
   const [customExerciseEquipment, setCustomExerciseEquipment] = useState("");
   const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
   const [editExerciseName, setEditExerciseName] = useState("");
+  const [editingExerciseDetails, setEditingExerciseDetails] = useState<string | null>(null);
+  const [editTargetSets, setEditTargetSets] = useState(1);
+  const [editTargetRepsMin, setEditTargetRepsMin] = useState<number | null>(null);
+  const [editTargetRepsMax, setEditTargetRepsMax] = useState<number | null>(null);
+  const [editIsWarmup, setEditIsWarmup] = useState(false);
 
   async function toggleDay(day: number) {
     const next = scheduledDays.includes(day)
@@ -141,6 +146,39 @@ export function TemplateDetailClient({
     router.refresh();
   }
 
+  async function saveExerciseDetails() {
+    if (!editingExerciseDetails) return;
+    await updateTemplateExerciseAction(editingExerciseDetails, {
+      target_sets: editTargetSets,
+      target_reps_min: editTargetRepsMin ?? undefined,
+      target_reps_max: editTargetRepsMax ?? undefined,
+      is_warmup: editIsWarmup,
+    });
+    setExercises((prev) =>
+      prev.map((e) =>
+        e.id === editingExerciseDetails
+          ? { 
+              ...e, 
+              target_sets: editTargetSets,
+              target_reps_min: editTargetRepsMin,
+              target_reps_max: editTargetRepsMax,
+              is_warmup: editIsWarmup,
+            }
+          : e
+      )
+    );
+    setEditingExerciseDetails(null);
+    router.refresh();
+  }
+
+  function startEditingDetails(te: typeof exercises[0]) {
+    setEditingExerciseDetails(te.id);
+    setEditTargetSets(te.target_sets);
+    setEditTargetRepsMin(te.target_reps_min);
+    setEditTargetRepsMax(te.target_reps_max);
+    setEditIsWarmup(te.is_warmup);
+  }
+
   async function moveExercise(index: number, direction: "up" | "down") {
     const newOrder = [...exercises];
     const swapIndex = direction === "up" ? index - 1 : index + 1;
@@ -170,7 +208,7 @@ export function TemplateDetailClient({
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && saveName()}
-                className="flex-1 min-w-0 px-3 py-2 rounded-2xl bg-card border border-border text-lg font-bold"
+                className="flex-1 min-w-0 px-4 py-3 rounded-2xl bg-card border border-border text-lg font-bold min-h-[48px] touch-manipulation"
                 autoFocus
               />
               <div className="flex gap-2">
@@ -206,7 +244,7 @@ export function TemplateDetailClient({
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
                 placeholder="Description (optional)"
-                className="flex-1 min-w-0 px-3 py-2 rounded-2xl bg-card border border-border text-sm"
+                className="flex-1 min-w-0 px-4 py-3 rounded-2xl bg-card border border-border text-sm min-h-[48px] touch-manipulation"
                 onKeyDown={(e) => e.key === "Enter" && saveDescription()}
               />
               <div className="flex gap-2">
@@ -283,10 +321,10 @@ export function TemplateDetailClient({
             type="button"
             variant="ghost"
             size="sm"
-            className="rounded-full gap-1 text-primary"
+            className="rounded-full gap-1 text-primary h-10 px-4 min-h-[40px] touch-manipulation"
             onClick={() => setAddExerciseOpen(true)}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4 flex-shrink-0" />
             Add exercise
           </Button>
         </div>
@@ -298,48 +336,48 @@ export function TemplateDetailClient({
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center gap-4 p-5 rounded-2xl shadow-neu-inset bg-card group"
             >
-              <div className="flex flex-col gap-0.5">
+              <div className="flex flex-col gap-1">
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30"
+                  className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 touch-manipulation min-h-[36px] min-w-[36px]"
                   onClick={() => moveExercise(i, "up")}
                   disabled={i === 0}
                   aria-label="Move up"
                 >
-                  <ChevronUp className="h-4 w-4" />
+                  <ChevronUp className="h-5 w-5" />
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30"
+                  className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 touch-manipulation min-h-[36px] min-w-[36px]"
                   onClick={() => moveExercise(i, "down")}
                   disabled={i === exercises.length - 1}
                   aria-label="Move down"
                 >
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-5 w-5" />
                 </Button>
               </div>
               <div className="flex-1 min-w-0">
                 {editingExerciseId === te.id ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <input
                       type="text"
                       value={editExerciseName}
                       onChange={(e) => setEditExerciseName(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && saveExerciseName()}
-                      className="flex-1 min-w-0 px-3 py-1.5 rounded-xl bg-card border border-border text-sm font-bold"
+                      className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-card border border-border text-sm font-bold min-h-[48px] touch-manipulation"
                       autoFocus
                     />
-                    <Button size="sm" className="rounded-full h-8" onClick={saveExerciseName}>
+                    <Button size="sm" className="rounded-full h-9 px-4 min-h-[36px] touch-manipulation" onClick={saveExerciseName}>
                       Save
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="rounded-full h-8"
+                      className="rounded-full h-9 px-4 min-h-[36px] touch-manipulation"
                       onClick={() => {
                         setEditingExerciseId(null);
                         setEditExerciseName("");
@@ -348,34 +386,105 @@ export function TemplateDetailClient({
                       Cancel
                     </Button>
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingExerciseId(te.id);
-                      setEditExerciseName(te.display_name ?? te.exercise.name);
-                    }}
-                    className="text-left w-full group/name"
-                  >
-                    <p className="font-bold text-lg leading-tight break-words group-hover/name:text-primary transition-colors">
+                ) : editingExerciseDetails === te.id ? (
+                  <div className="space-y-3">
+                    <p className="font-bold text-lg leading-tight break-words">
                       {te.display_name ?? te.exercise.name}
                     </p>
-                    <p className="text-xs font-medium text-primary mt-1 tracking-wide uppercase">
-                      {te.target_sets} SETS × {te.target_reps_min ?? "?"}–{te.target_reps_max ?? "?"} REPS
-                      {te.is_warmup && " (WARMUP)"}
-                    </p>
-                  </button>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-muted-foreground uppercase tracking-wider">Sets</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={editTargetSets}
+                          onChange={(e) => setEditTargetSets(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-16 h-11 rounded-lg shadow-neu-inset bg-card border-0 text-center text-base font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[44px] touch-manipulation"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-muted-foreground uppercase tracking-wider">Reps</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={editTargetRepsMin ?? ""}
+                          onChange={(e) => setEditTargetRepsMin(e.target.value ? parseInt(e.target.value) : null)}
+                          placeholder="Min"
+                          className="w-16 h-11 rounded-lg shadow-neu-inset bg-card border-0 text-center text-base font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[44px] touch-manipulation"
+                        />
+                        <span className="text-muted-foreground">–</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={editTargetRepsMax ?? ""}
+                          onChange={(e) => setEditTargetRepsMax(e.target.value ? parseInt(e.target.value) : null)}
+                          placeholder="Max"
+                          className="w-16 h-11 rounded-lg shadow-neu-inset bg-card border-0 text-center text-base font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[44px] touch-manipulation"
+                        />
+                      </div>
+                      <label className="flex items-center gap-2 cursor-pointer touch-manipulation min-h-[44px]">
+                        <input
+                          type="checkbox"
+                          checked={editIsWarmup}
+                          onChange={(e) => setEditIsWarmup(e.target.checked)}
+                          className="w-5 h-5 rounded border-border text-primary focus:ring-primary/50 min-h-[20px] min-w-[20px]"
+                        />
+                        <span className="text-xs text-muted-foreground uppercase tracking-wider">Warmup</span>
+                      </label>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" className="rounded-full h-9 px-4 min-h-[36px] touch-manipulation" onClick={saveExerciseDetails}>
+                        Save
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="rounded-full h-9 px-4 min-h-[36px] touch-manipulation"
+                        onClick={() => setEditingExerciseDetails(null)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingExerciseId(te.id);
+                        setEditExerciseName(te.display_name ?? te.exercise.name);
+                      }}
+                      className="text-left w-full group/name touch-manipulation"
+                    >
+                      <p className="font-bold text-lg leading-tight break-words group-hover/name:text-primary transition-colors py-1">
+                        {te.display_name ?? te.exercise.name}
+                      </p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => startEditingDetails(te)}
+                      className="text-left w-full touch-manipulation"
+                    >
+                      <p className="text-xs font-medium text-primary tracking-wide uppercase py-2 px-3 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors inline-block">
+                        {te.target_sets} SETS × {te.target_reps_min ?? "?"}{te.target_reps_max && te.target_reps_max !== te.target_reps_min ? `–${te.target_reps_max}` : ""} REPS
+                        {te.is_warmup && " (WARMUP)"}
+                      </p>
+                    </button>
+                  </div>
                 )}
               </div>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-11 w-11 rounded-full text-muted-foreground hover:text-destructive opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity touch-manipulation min-h-[44px] min-w-[44px] flex-shrink-0"
                 onClick={() => removeExercise(te.id)}
                 aria-label="Remove exercise"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-5 w-5" />
               </Button>
             </motion.div>
           ))}

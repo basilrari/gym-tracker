@@ -35,15 +35,23 @@ export default async function TemplatesPage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        <form action={createTemplateFormAction} className="block">
-          <Button type="submit" variant="outline" className="w-full rounded-full h-12 font-medium gap-2">
-            <Plus className="h-5 w-5" />
+      <div className="flex flex-col gap-3">
+        <form action={createTemplateFormAction} className="block touch-manipulation">
+          <Button 
+            type="submit" 
+            variant="outline" 
+            className="w-full rounded-full h-14 font-medium gap-2 text-base min-h-[56px] touch-manipulation active:scale-[0.98] transition-transform cursor-pointer"
+          >
+            <Plus className="h-5 w-5 flex-shrink-0" />
             Create new routine
           </Button>
         </form>
-        <form action={startWorkoutEmptyForm} className="block">
-          <Button type="submit" variant="ghost" className="w-full rounded-full h-10 text-muted-foreground hover:text-foreground text-sm">
+        <form action={startWorkoutEmptyForm} className="block touch-manipulation">
+          <Button 
+            type="submit" 
+            variant="ghost" 
+            className="w-full rounded-full h-12 text-muted-foreground hover:text-foreground text-sm min-h-[48px] touch-manipulation active:scale-[0.98] transition-transform cursor-pointer"
+          >
             Start empty workout
           </Button>
         </form>
@@ -51,22 +59,28 @@ export default async function TemplatesPage() {
 
       <div className="space-y-4">
         {templates.map((template) => (
-          <div key={template.id} className="flex items-center justify-between gap-4 p-5 rounded-3xl bg-card shadow-neu-extruded group">
+          <div key={template.id} className="flex items-center justify-between gap-4 p-5 rounded-3xl bg-card shadow-neu-extruded group min-h-[80px]">
             <Link
               href={`/templates/${template.id}`}
-              className="flex-1 flex flex-col justify-center gap-1 min-w-0"
+              className="flex-1 flex flex-col justify-center gap-1 min-w-0 py-2"
             >
               <div className="flex items-center gap-2">
-                <span className="font-bold text-lg break-words group-hover:text-primary transition-colors">{template.name}</span>
-                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                <span className="font-bold text-lg break-words group-hover:text-primary transition-colors leading-tight">{template.name}</span>
+                <ChevronRight className="h-5 w-5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0" />
               </div>
-              <span className="text-xs text-muted-foreground uppercase tracking-wider break-words">{template.description || "Custom workout"}</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider break-words mt-1">{template.description || "Custom workout"}</span>
             </Link>
-            <form action={startWorkoutFromForm} className="ml-4">
+            <form action={startWorkoutFromForm} className="ml-2 flex-shrink-0">
               <input type="hidden" name="templateId" value={template.id} />
               <input type="hidden" name="templateName" value={template.name} />
-              <Button type="submit" size="icon" variant="ghost" className="rounded-full h-12 w-12 shadow-neu-inset bg-card group-hover:shadow-neu-extruded active:shadow-neu-pressed transition-all">
-                <Play className="h-5 w-5 text-primary ml-0.5 group-hover:drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)]" />
+              <Button 
+                type="submit" 
+                size="icon" 
+                variant="ghost" 
+                className="rounded-full h-14 w-14 shadow-neu-inset bg-card group-hover:shadow-neu-extruded active:shadow-neu-pressed transition-all min-h-[56px] min-w-[56px] touch-manipulation"
+                aria-label={`Start ${template.name} workout`}
+              >
+                <Play className="h-6 w-6 text-primary ml-0.5 group-hover:drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)]" />
               </Button>
             </form>
           </div>

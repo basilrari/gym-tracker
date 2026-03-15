@@ -80,4 +80,16 @@
   .scrollbar-neu::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--neu-light) / 0.8);
   }
+  
+  /* Touch manipulation for mobile - prevents double-tap zoom */
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Ensure inputs are properly sized on mobile */
+  .mobile-input {
+    min-height: 44px;
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
 }

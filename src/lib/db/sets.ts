@@ -49,3 +49,30 @@ export async function getSetsForWorkout(
   if (error) throw error;
   return (data ?? []) as WorkoutSet[];
 }
+
+export async function updateSet(
+  setId: string,
+  data: {
+    weight_kg?: number;
+    reps?: number;
+    is_failure?: boolean;
+  }
+): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("workout_sets")
+    .update(data)
+    .eq("id", setId);
+
+  if (error) throw error;
+}
+
+export async function deleteSet(setId: string): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("workout_sets")
+    .delete()
+    .eq("id", setId);
+
+  if (error) throw error;
+}
