@@ -30,9 +30,11 @@ export async function updateTemplateExerciseAction(
     target_reps_min?: number;
     target_reps_max?: number;
     is_warmup?: boolean;
+    display_name?: string | null;
   }
 ) {
   await updateTemplateExercise(templateExerciseId, data);
+  revalidatePath("/templates");
 }
 
 export async function removeTemplateExerciseAction(
@@ -68,6 +70,9 @@ export async function reorderTemplateExercisesAction(
   orderedIds: string[]
 ) {
   await reorderTemplateExercises(templateId, orderedIds);
+  revalidatePath("/");
+  revalidatePath("/templates");
+  revalidatePath(`/templates/${templateId}`);
 }
 
 export async function createTemplateAction(name?: string) {

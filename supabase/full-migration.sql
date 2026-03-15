@@ -291,3 +291,6 @@ CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXEC
 
 -- Add scheduled_days if table was created before this column existed (1=Mon .. 7=Sun)
 ALTER TABLE workout_templates ADD COLUMN IF NOT EXISTS scheduled_days INTEGER[] DEFAULT '{}';
+
+-- Add display_name to template_exercises for custom names per routine
+ALTER TABLE template_exercises ADD COLUMN IF NOT EXISTS display_name TEXT;

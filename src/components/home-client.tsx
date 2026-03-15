@@ -48,7 +48,7 @@ export function HomeClient({
   const progressPercent = Math.min(100, Math.round((weekStats.workoutsThisWeek / 5) * 100));
 
   return (
-    <div className="p-4 space-y-8 max-w-lg mx-auto">
+    <div className="px-6 py-6 space-y-10 max-w-lg mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">
           {profile?.display_name || profile?.username || "Gym Tracker"}
@@ -82,8 +82,8 @@ export function HomeClient({
       </div>
 
       {mode === "me" ? (
-        <div className="space-y-8">
-          <div className="flex flex-col items-center justify-center relative py-6">
+        <div className="space-y-10">
+          <div className="flex flex-col items-center justify-center relative py-8">
             <div className="relative w-56 h-56 flex items-center justify-center rounded-full shadow-neu-extruded bg-card">
               <div className="absolute inset-3 rounded-full shadow-neu-inset bg-card flex flex-col items-center justify-center">
                 {suggestedTemplate ? (
@@ -111,7 +111,7 @@ export function HomeClient({
               </svg>
             </div>
             
-            <div className="absolute -bottom-6 z-10 flex flex-col items-center gap-3">
+            <div className="absolute -bottom-6 z-10 flex flex-col items-center gap-6">
               <Button
                 size="icon-lg"
                 className="rounded-full h-[72px] w-[72px] shadow-[0_0_20px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_25px_hsl(var(--primary)/0.6)] animate-pulse-slow"
@@ -122,7 +122,7 @@ export function HomeClient({
               <Button
                 variant="ghost"
                 size="sm"
-                className="rounded-full text-muted-foreground hover:text-foreground text-xs"
+                className="rounded-full text-muted-foreground hover:text-foreground text-xs px-6 py-3"
                 onClick={() => startWorkoutAction(null, "Custom workout")}
               >
                 Start empty workout
@@ -130,7 +130,7 @@ export function HomeClient({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 px-2 pt-6">
+          <div className="grid grid-cols-3 gap-4 px-2 pt-10">
             <div className="flex flex-col items-center">
               <Flame className="h-5 w-5 text-primary mb-1 drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)]" />
               <span className="text-xl font-bold">{streak}</span>
@@ -148,7 +148,7 @@ export function HomeClient({
             </div>
           </div>
 
-          <div className="space-y-4 pt-4 pb-8">
+          <div className="space-y-4 pt-6 pb-10">
             <div className="flex justify-between items-end px-2">
               <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your Routines</h2>
               <Link href="/templates" className="text-xs text-primary hover:underline font-medium">View All</Link>
@@ -181,7 +181,7 @@ export function HomeClient({
           </div>
         </div>
       ) : (
-        <div className="space-y-6 pt-2 pb-8">
+        <div className="space-y-8 pt-4 pb-10">
           {myRank && (
             <div className="p-6 rounded-3xl bg-card shadow-neu-inset text-center relative overflow-hidden">
               <div className="absolute inset-0 border border-primary/20 rounded-3xl" />

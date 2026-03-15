@@ -49,6 +49,7 @@ export type TemplateExercise = {
   target_reps_min: number | null;
   target_reps_max: number | null;
   is_warmup: boolean;
+  display_name?: string | null;
 };
 
 export type TemplateWithExercises = WorkoutTemplate & {

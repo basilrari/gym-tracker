@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Play, ChevronLeft, GripVertical, Calendar, Pencil, Plus, Trash2 } from "lucide-react";
+import { Play, ChevronLeft, ChevronUp, ChevronDown, Calendar, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import type { TemplateWithExercises } from "@/lib/db/types";
 import type { Exercise } from "@/lib/db/types";
-import { updateTemplateAction, addTemplateExerciseAction, removeTemplateExerciseAction } from "@/app/actions/templates";
+import { updateTemplateAction, addTemplateExerciseAction, removeTemplateExerciseAction, reorderTemplateExercisesAction, updateTemplateExerciseAction } from "@/app/actions/templates";
 import { createExerciseAction } from "@/app/actions/exercises";
 
 const DAY_LABELS: { value: number; label: string }[] = [
@@ -59,6 +59,8 @@ export function TemplateDetailClient({
   const [createCustomOpen, setCreateCustomOpen] = useState(false);
   const [customExerciseName, setCustomExerciseName] = useState("");
   const [customExerciseEquipment, setCustomExerciseEquipment] = useState("");
+  const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
+  const [editExerciseName, setEditExerciseName] = useState("");
 
   async function toggleDay(day: number) {
     const next = scheduledDays.includes(day)
@@ -120,6 +122,35 @@ export function TemplateDetailClient({
   async function removeExercise(templateExerciseId: string) {
     await removeTemplateExerciseAction(templateExerciseId);
     setExercises((prev) => prev.filter((e) => e.id !== templateExerciseId));
+    router.refresh();
+  }
+
+  async function saveExerciseName() {
+    if (!editingExerciseId) return;
+    await updateTemplateExerciseAction(editingExerciseId, {
+      display_name: editExerciseName.trim() || null,
+    });
+    setExercises((prev) =>
+      prev.map((e) =>
+        e.id === editingExerciseId
+          ? { ...e, display_name: editExerciseName.trim() || null }
+          : e
+      )
+    );
+    setEditingExerciseId(null);
+    router.refresh();
+  }
+
+  async function moveExercise(index: number, direction: "up" | "down") {
+    const newOrder = [...exercises];
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= newOrder.length) return;
+    [newOrder[index], newOrder[swapIndex]] = [newOrder[swapIndex], newOrder[index]];
+    setExercises(newOrder);
+    await reorderTemplateExercisesAction(
+      template.id,
+      newOrder.map((e) => e.id)
+    );
     router.refresh();
   }
 
@@ -261,13 +292,74 @@ export function TemplateDetailClient({
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center gap-3 p-4 rounded-2xl shadow-neu-inset bg-card group"
             >
-              <GripVertical className="h-5 w-5 text-muted-foreground/50 flex-shrink-0" />
+              <div className="flex flex-col gap-0.5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30"
+                  onClick={() => moveExercise(i, "up")}
+                  disabled={i === 0}
+                  aria-label="Move up"
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30"
+                  onClick={() => moveExercise(i, "down")}
+                  disabled={i === exercises.length - 1}
+                  aria-label="Move down"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-lg leading-tight truncate">{te.exercise.name}</p>
-                <p className="text-xs font-medium text-primary mt-1 tracking-wide uppercase">
-                  {te.target_sets} SETS × {te.target_reps_min ?? "?"}–{te.target_reps_max ?? "?"} REPS
-                  {te.is_warmup && " (WARMUP)"}
-                </p>
+                {editingExerciseId === te.id ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={editExerciseName}
+                      onChange={(e) => setEditExerciseName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && saveExerciseName()}
+                      className="flex-1 min-w-0 px-3 py-1.5 rounded-xl bg-card border border-border text-sm font-bold"
+                      autoFocus
+                    />
+                    <Button size="sm" className="rounded-full h-8" onClick={saveExerciseName}>
+                      Save
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="rounded-full h-8"
+                      onClick={() => {
+                        setEditingExerciseId(null);
+                        setEditExerciseName("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingExerciseId(te.id);
+                      setEditExerciseName(te.display_name ?? te.exercise.name);
+                    }}
+                    className="text-left w-full group/name"
+                  >
+                    <p className="font-bold text-lg leading-tight truncate group-hover/name:text-primary transition-colors">
+                      {te.display_name ?? te.exercise.name}
+                    </p>
+                    <p className="text-xs font-medium text-primary mt-1 tracking-wide uppercase">
+                      {te.target_sets} SETS × {te.target_reps_min ?? "?"}–{te.target_reps_max ?? "?"} REPS
+                      {te.is_warmup && " (WARMUP)"}
+                    </p>
+                  </button>
+                )}
               </div>
               <Button
                 type="button"

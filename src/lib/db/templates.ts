@@ -130,7 +130,7 @@ export async function updateTemplateExercise(
   data: Partial<
     Pick<
       TemplateExercise,
-      "order_index" | "target_sets" | "target_reps_min" | "target_reps_max" | "is_warmup"
+      "order_index" | "target_sets" | "target_reps_min" | "target_reps_max" | "is_warmup" | "display_name"
     >
   >
 ): Promise<void> {
