@@ -149,7 +149,7 @@ export function WorkoutLogger({
       <div className="sticky top-0 z-10 w-full max-w-lg bg-background/80 backdrop-blur-md p-4">
         <div className="flex items-center justify-between p-4 rounded-3xl bg-card shadow-neu-extruded">
           <div>
-            <h1 className="font-bold text-sm uppercase tracking-wider text-primary truncate max-w-[150px]">{workout.name}</h1>
+            <h1 className="font-bold text-sm uppercase tracking-wider text-primary break-words max-w-[180px] sm:max-w-[220px]">{workout.name}</h1>
             <p className="text-2xl font-bold tracking-tight mt-1">
               {formatElapsed(elapsed)}
             </p>

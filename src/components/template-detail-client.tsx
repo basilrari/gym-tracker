@@ -156,15 +156,15 @@ export function TemplateDetailClient({
 
   return (
     <div className="p-4 space-y-6 max-w-lg mx-auto pb-8">
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/templates">
+      <div className="flex gap-4 mb-6">
+        <Link href="/templates" className="flex-shrink-0">
           <Button variant="ghost" size="icon" className="rounded-full shadow-neu-extruded active:shadow-neu-pressed h-12 w-12">
             <ChevronLeft className="h-6 w-6 text-primary" />
           </Button>
         </Link>
         <div className="flex-1 min-w-0">
           {editingName ? (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <input
                 type="text"
                 value={editName}
@@ -173,21 +173,26 @@ export function TemplateDetailClient({
                 className="flex-1 min-w-0 px-3 py-2 rounded-2xl bg-card border border-border text-lg font-bold"
                 autoFocus
               />
-              <Button size="sm" className="rounded-full" onClick={saveName}>
-                Save
-              </Button>
-              <Button size="sm" variant="ghost" className="rounded-full" onClick={() => { setEditingName(false); setEditName(template.name); }}>
-                Cancel
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" className="rounded-full" onClick={saveName}>
+                  Save
+                </Button>
+                <Button size="sm" variant="ghost" className="rounded-full" onClick={() => { setEditingName(false); setEditName(template.name); }}>
+                  Cancel
+                </Button>
+              </div>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => setEditingName(true)}
-              className="flex items-center gap-2 w-full text-left group"
+              className="w-full text-left p-3 rounded-2xl border border-dashed border-border/60 hover:border-primary/60 hover:bg-card/50 transition-colors group"
             >
-              <h1 className="text-2xl font-bold tracking-tight truncate">{template.name}</h1>
-              <Pencil className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 flex-shrink-0" />
+              <div className="flex items-start gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight break-words flex-1">{template.name}</h1>
+                <Pencil className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" aria-hidden />
+              </div>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1 block">Tap to edit</span>
             </button>
           )}
         </div>
@@ -195,7 +200,7 @@ export function TemplateDetailClient({
       {(editingDesc || template.description) && (
         <div className="px-2">
           {editingDesc ? (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <input
                 type="text"
                 value={editDescription}
@@ -204,21 +209,23 @@ export function TemplateDetailClient({
                 className="flex-1 min-w-0 px-3 py-2 rounded-2xl bg-card border border-border text-sm"
                 onKeyDown={(e) => e.key === "Enter" && saveDescription()}
               />
-              <Button size="sm" className="rounded-full" onClick={saveDescription}>
-                Save
-              </Button>
-              <Button size="sm" variant="ghost" className="rounded-full" onClick={() => { setEditingDesc(false); setEditDescription(template.description ?? ""); }}>
-                Cancel
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" className="rounded-full" onClick={saveDescription}>
+                  Save
+                </Button>
+                <Button size="sm" variant="ghost" className="rounded-full" onClick={() => { setEditingDesc(false); setEditDescription(template.description ?? ""); }}>
+                  Cancel
+                </Button>
+              </div>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => setEditingDesc(true)}
-              className="text-sm text-muted-foreground hover:text-foreground text-left flex items-center gap-2 group w-full"
+              className="w-full text-left p-3 rounded-2xl border border-dashed border-border/60 hover:border-primary/60 hover:bg-card/50 transition-colors flex items-center gap-2"
             >
-              <span className="truncate">{template.description || "Add description"}</span>
-              <Pencil className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 flex-shrink-0" />
+              <span className="text-sm text-muted-foreground flex-1 break-words">{template.description || "Add description"}</span>
+              <Pencil className="h-3.5 w-3.5 text-primary flex-shrink-0" aria-hidden />
             </button>
           )}
         </div>
@@ -227,9 +234,10 @@ export function TemplateDetailClient({
         <button
           type="button"
           onClick={() => setEditingDesc(true)}
-          className="text-xs text-muted-foreground hover:text-foreground px-2"
+          className="w-full text-left p-3 rounded-2xl border border-dashed border-border/60 hover:border-primary/60 text-xs text-muted-foreground hover:text-foreground flex items-center gap-2"
         >
-          + Add description
+          <span>+ Add description</span>
+          <Pencil className="h-3.5 w-3.5 text-primary flex-shrink-0" aria-hidden />
         </button>
       )}
 
