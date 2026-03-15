@@ -131,50 +131,50 @@ export function HistoryClient({ workouts, templates }: HistoryClientProps) {
         {filtered.map((w) => (
           <div
             key={w.id}
-            className="flex items-center gap-4 p-5 rounded-3xl bg-card shadow-neu-extruded"
+            className="flex items-center gap-3 p-4 rounded-3xl bg-card shadow-neu-extruded"
           >
             <Link
               href={`/workout/${w.id}/complete`}
-              className="flex-1 flex flex-col gap-1 min-w-0"
+              className="flex-1 flex flex-col gap-0.5 min-w-0"
             >
               <div className="flex items-center gap-2">
-                <span className="font-bold text-lg break-words">{w.name}</span>
+                <span className="font-bold text-base leading-tight break-words">{w.name}</span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               </div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground leading-tight">
                 <span className="flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
+                  <Calendar className="h-3 w-3" />
                   {format(parseISO(w.start_time), "MMM d, yyyy")}
                 </span>
                 <span>{formatDuration(w.start_time, w.end_time)}</span>
                 {w.total_volume_kg != null && w.total_volume_kg > 0 && (
-                  <span>{Math.round(w.total_volume_kg)} kg volume</span>
+                  <span>{Math.round(w.total_volume_kg)} kg</span>
                 )}
               </div>
             </Link>
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex flex-col gap-1 flex-shrink-0 ml-2">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full"
+                className="h-8 w-8 rounded-full touch-manipulation min-h-[32px] min-w-[32px]"
                 onClick={() => handleEdit(w)}
                 aria-label="Edit name"
               >
-                <Pencil className="h-4 w-4" />
+                <Pencil className="h-3.5 w-3.5" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full text-destructive hover:text-destructive"
+                className="h-8 w-8 rounded-full text-destructive hover:text-destructive touch-manipulation min-h-[32px] min-w-[32px]"
                 onClick={() => setDeleteWorkout(w)}
                 aria-label="Delete"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full"
+                className="h-8 w-8 rounded-full touch-manipulation min-h-[32px] min-w-[32px]"
                 onClick={() => {
                   setSaveAsTemplateWorkout(w);
                   setTemplateName(w.name);
@@ -182,7 +182,7 @@ export function HistoryClient({ workouts, templates }: HistoryClientProps) {
                 }}
                 aria-label="Save as template"
               >
-                <Copy className="h-4 w-4" />
+                <Copy className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>

@@ -231,7 +231,10 @@ export function WorkoutLogger({
 
       <div className="w-full max-w-lg p-4 space-y-6 flex-1 flex flex-col">
         {/* Exercise list – vertical stack with custom scrollbar */}
-        <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto scrollbar-neu rounded-2xl pr-1">
+        <div className="relative flex flex-col gap-2 max-h-[220px] overflow-y-auto scrollbar-neu rounded-2xl pr-1">
+          {/* Scroll hint gradient */}
+          <div className="absolute top-0 left-0 right-1 h-6 bg-gradient-to-b from-background to-transparent pointer-events-none z-10 rounded-t-2xl" />
+          <div className="absolute bottom-0 left-0 right-1 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none z-10 rounded-b-2xl" />
           {templateExercises.map((te, i) => {
             const completed = sets.filter((s) => s.exercise_id === te.exercise_id).length >= te.target_sets;
             const isActive = i === currentExerciseIndex;
@@ -270,9 +273,10 @@ export function WorkoutLogger({
             </div>
 
             {/* Set History (Playlist Style) */}
-            <div className="space-y-3 mt-4">
-              <AnimatePresence initial={false}>
-                {exerciseSets.map((s, i) => (
+            <div className="relative max-h-[240px] overflow-y-auto scrollbar-neu pr-1 -mr-1">
+              <div className="space-y-3 mt-4 pb-4">
+                <AnimatePresence initial={false}>
+                  {exerciseSets.map((s, i) => (
                   <motion.div
                     key={s.id}
                     initial={{ opacity: 0, height: 0, scale: 0.9 }}
@@ -287,7 +291,15 @@ export function WorkoutLogger({
                             min={0}
                             step={0.5}
                             value={editSetWeight}
-                            onChange={(e) => setEditSetWeight(parseFloat(e.target.value) || 0)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "") {
+                                setEditSetWeight(0);
+                              } else {
+                                const num = parseFloat(val);
+                                setEditSetWeight(Number.isNaN(num) ? 0 : Math.max(0, num));
+                              }
+                            }}
                             className="w-16 h-10 rounded-lg shadow-neu-inset bg-card border-0 text-center text-sm font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[40px] touch-manipulation"
                             aria-label="Edit weight"
                           />
@@ -297,7 +309,16 @@ export function WorkoutLogger({
                             type="number"
                             min={1}
                             value={editSetReps}
-                            onChange={(e) => setEditSetReps(parseInt(e.target.value) || 1)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "") {
+                                setEditSetReps(0);
+                              } else {
+                                const num = parseInt(val, 10);
+                                setEditSetReps(Number.isNaN(num) ? 0 : Math.max(0, num));
+                              }
+                            }}
+                            onBlur={() => setEditSetReps((r) => Math.max(1, r || 1))}
                             className="w-14 h-10 rounded-lg shadow-neu-inset bg-card border-0 text-center text-sm font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[40px] touch-manipulation"
                             aria-label="Edit reps"
                           />
@@ -377,12 +398,17 @@ export function WorkoutLogger({
                     )}
                   </motion.div>
                 ))}
-              </AnimatePresence>
+                </AnimatePresence>
+              </div>
+              {/* Scroll hint gradient at bottom */}
+              {exerciseSets.length > 3 && (
+                <div className="absolute bottom-0 left-0 right-1 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none z-10 rounded-b-xl" />
+              )}
             </div>
 
             {/* Input Controls – weight and reps with manual entry + steppers */}
             {nextSetIndex < targetSets && (
-              <div className="p-4 sm:p-6 rounded-3xl shadow-neu-extruded bg-card mt-auto space-y-6 sm:space-y-8">
+              <div className="fixed bottom-0 left-0 right-0 p-4 sm:p-6 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.3)] bg-card z-50 space-y-4 sm:space-y-6 max-w-lg mx-auto border-t border-border/50">
                 <div className="flex items-center justify-between px-1 sm:px-2 gap-2">
                   <div className="flex flex-col items-center gap-2 sm:gap-3 flex-1">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Weight (kg)</span>
@@ -402,9 +428,15 @@ export function WorkoutLogger({
                         step={0.5}
                         value={weight}
                         onChange={(e) => {
-                          const v = e.target.value === "" ? 0 : parseFloat(e.target.value);
-                          setWeight(Number.isNaN(v) ? 0 : Math.max(0, v));
+                          const val = e.target.value;
+                          if (val === "") {
+                            setWeight(0);
+                          } else {
+                            const num = parseFloat(val);
+                            setWeight(Number.isNaN(num) ? 0 : Math.max(0, num));
+                          }
                         }}
+                        onBlur={() => setWeight((w) => Math.max(0, w || 0))}
                         className="w-16 h-16 sm:w-20 sm:h-20 rounded-full shadow-neu-inset bg-card border-0 text-center text-xl sm:text-2xl font-bold text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation min-h-[64px] min-w-[64px]"
                         aria-label="Weight in kg"
                       />
@@ -440,9 +472,15 @@ export function WorkoutLogger({
                         step={1}
                         value={reps}
                         onChange={(e) => {
-                          const v = e.target.value === "" ? 1 : parseInt(e.target.value, 10);
-                          setReps(Number.isNaN(v) ? 1 : Math.max(1, v));
+                          const val = e.target.value;
+                          if (val === "") {
+                            setReps(0);
+                          } else {
+                            const num = parseInt(val, 10);
+                            setReps(Number.isNaN(num) ? 0 : Math.max(0, num));
+                          }
                         }}
+                        onBlur={() => setReps((r) => Math.max(1, r || 1))}
                         className="w-16 h-16 sm:w-20 sm:h-20 rounded-full shadow-neu-inset bg-card border-0 text-center text-xl sm:text-2xl font-bold text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation min-h-[64px] min-w-[64px]"
                         aria-label="Reps"
                       />
@@ -567,20 +605,20 @@ function EndWorkoutDialog({
                 Save and finish this workout, or discard it and leave without saving.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter className="flex flex-col gap-2 sm:flex-row">
-              <Button variant="outline" className="rounded-full" onClick={() => onOpenChange(false)}>
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-4">
+              <Button variant="outline" className="rounded-full h-12 flex-1 touch-manipulation min-h-[48px]" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
               <Button
                 variant="destructive"
-                className="rounded-full"
+                className="rounded-full h-12 flex-1 touch-manipulation min-h-[48px]"
                 onClick={() => onStepChange("confirm-discard")}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Discard workout
+                Discard
               </Button>
               <Button
-                className="rounded-full"
+                className="rounded-full h-12 flex-1 touch-manipulation min-h-[48px]"
                 onClick={() => onStepChange("confirm-save")}
               >
                 Save & finish
@@ -596,13 +634,13 @@ function EndWorkoutDialog({
                 This will save your workout and show the summary. You can view it in your history later.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter className="flex flex-col gap-2 sm:flex-row">
-              <Button variant="outline" className="rounded-full" onClick={() => onStepChange("choice")}>
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-4">
+              <Button variant="outline" className="rounded-full h-12 flex-1 touch-manipulation min-h-[48px]" onClick={() => onStepChange("choice")}>
                 Back
               </Button>
-              <form action={endWorkoutFromForm} className="inline">
+              <form action={endWorkoutFromForm} className="inline flex-1">
                 <input type="hidden" name="workoutId" value={workoutId} />
-                <Button type="submit" className="rounded-full">
+                <Button type="submit" className="rounded-full h-12 w-full touch-manipulation min-h-[48px]">
                   Save & finish
                 </Button>
               </form>
@@ -617,13 +655,13 @@ function EndWorkoutDialog({
                 All logged sets will be lost. This cannot be undone.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter className="flex flex-col gap-2 sm:flex-row">
-              <Button variant="outline" className="rounded-full" onClick={() => onStepChange("choice")}>
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-4">
+              <Button variant="outline" className="rounded-full h-12 flex-1 touch-manipulation min-h-[48px]" onClick={() => onStepChange("choice")}>
                 Back
               </Button>
-              <form action={deleteWorkoutFromForm} className="inline">
+              <form action={deleteWorkoutFromForm} className="inline flex-1">
                 <input type="hidden" name="workoutId" value={workoutId} />
-                <Button type="submit" variant="destructive" className="rounded-full">
+                <Button type="submit" variant="destructive" className="rounded-full h-12 w-full touch-manipulation min-h-[48px]">
                   <Trash2 className="h-4 w-4 mr-2" />
                   Discard
                 </Button>
