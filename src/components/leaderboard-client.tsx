@@ -39,7 +39,7 @@ export function LeaderboardClient({
   const rows = metric === "consistency" ? consistency : volume;
 
   return (
-    <div className="p-4 space-y-6 max-w-lg mx-auto pb-32">
+    <div className="p-4 space-y-6 max-w-lg mx-auto pb-8">
       <div className="text-center space-y-1 mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Leaderboard</h1>
         <p className="text-muted-foreground text-xs uppercase tracking-wider">Compete with the community</p>

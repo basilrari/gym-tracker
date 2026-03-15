@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTemplatesForUser } from "@/lib/db/templates";
 import Link from "next/link";
-import { startWorkoutFromForm } from "@/app/actions/workouts";
+import { startWorkoutFromForm, startWorkoutEmptyForm } from "@/app/actions/workouts";
 import { createTemplateFormAction } from "@/app/actions/templates";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Play, AlertCircle, Plus } from "lucide-react";
@@ -22,7 +22,7 @@ export default async function TemplatesPage() {
   }
 
   return (
-    <div className="p-4 space-y-6 max-w-lg mx-auto pb-32">
+    <div className="p-4 space-y-6 max-w-lg mx-auto pb-8">
       <div className="text-center space-y-1 mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Routines</h1>
         <p className="text-muted-foreground text-xs uppercase tracking-wider">Your workout templates</p>
@@ -35,12 +35,19 @@ export default async function TemplatesPage() {
         </div>
       )}
 
-      <form action={createTemplateFormAction} className="block">
-        <Button type="submit" variant="outline" className="w-full rounded-full h-12 font-medium gap-2">
-          <Plus className="h-5 w-5" />
-          Create new routine
-        </Button>
-      </form>
+      <div className="flex flex-col gap-2">
+        <form action={createTemplateFormAction} className="block">
+          <Button type="submit" variant="outline" className="w-full rounded-full h-12 font-medium gap-2">
+            <Plus className="h-5 w-5" />
+            Create new routine
+          </Button>
+        </form>
+        <form action={startWorkoutEmptyForm} className="block">
+          <Button type="submit" variant="ghost" className="w-full rounded-full h-10 text-muted-foreground hover:text-foreground text-sm">
+            Start empty workout
+          </Button>
+        </form>
+      </div>
 
       <div className="space-y-4">
         {templates.map((template) => (

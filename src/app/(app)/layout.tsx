@@ -23,11 +23,11 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppNav />
-      <main className="pb-32 pt-4">
+    <div className="min-h-screen flex flex-col bg-background">
+      <main className="flex-1 min-h-0 overflow-auto pt-4">
         <PageTransition>{children}</PageTransition>
       </main>
+      <AppNav />
     </div>
   );
 }

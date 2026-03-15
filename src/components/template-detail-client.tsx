@@ -16,6 +16,7 @@ import {
 import type { TemplateWithExercises } from "@/lib/db/types";
 import type { Exercise } from "@/lib/db/types";
 import { updateTemplateAction, addTemplateExerciseAction, removeTemplateExerciseAction } from "@/app/actions/templates";
+import { createExerciseAction } from "@/app/actions/exercises";
 
 const DAY_LABELS: { value: number; label: string }[] = [
   { value: 1, label: "Mon" },
@@ -54,6 +55,9 @@ export function TemplateDetailClient({
   );
   const [addExerciseOpen, setAddExerciseOpen] = useState(false);
   const [exerciseSearch, setExerciseSearch] = useState("");
+  const [createCustomOpen, setCreateCustomOpen] = useState(false);
+  const [customExerciseName, setCustomExerciseName] = useState("");
+  const [customExerciseEquipment, setCustomExerciseEquipment] = useState("");
 
   async function toggleDay(day: number) {
     const next = scheduledDays.includes(day)
@@ -98,6 +102,20 @@ export function TemplateDetailClient({
     router.refresh();
   }
 
+  async function handleCreateCustomExercise() {
+    const name = customExerciseName.trim();
+    if (!name) return;
+    const exercise = await createExerciseAction(name, customExerciseEquipment.trim() || null);
+    if (exercise) {
+      await addTemplateExerciseAction(template.id, exercise.id, exercises.length, 1);
+      setCreateCustomOpen(false);
+      setAddExerciseOpen(false);
+      setCustomExerciseName("");
+      setCustomExerciseEquipment("");
+      router.refresh();
+    }
+  }
+
   async function removeExercise(templateExerciseId: string) {
     await removeTemplateExerciseAction(templateExerciseId);
     setExercises((prev) => prev.filter((e) => e.id !== templateExerciseId));
@@ -105,7 +123,7 @@ export function TemplateDetailClient({
   }
 
   return (
-    <div className="p-4 space-y-6 max-w-lg mx-auto pb-32">
+    <div className="p-4 space-y-6 max-w-lg mx-auto pb-8">
       <div className="flex items-center gap-4 mb-6">
         <Link href="/templates">
           <Button variant="ghost" size="icon" className="rounded-full shadow-neu-extruded active:shadow-neu-pressed h-12 w-12">
@@ -306,7 +324,65 @@ export function TemplateDetailClient({
                 )}
               </button>
             ))}
+            <div className="pt-4 border-t border-border mt-4">
+              <button
+                type="button"
+                onClick={() => setCreateCustomOpen(true)}
+                className="w-full text-left px-4 py-3 rounded-2xl bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-all"
+              >
+                + Create custom exercise
+              </button>
+            </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={createCustomOpen} onOpenChange={setCreateCustomOpen}>
+        <DialogContent className="rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Create custom exercise</DialogTitle>
+            <DialogDescription>
+              Add a new exercise to your library. It will be added to this routine.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-2">
+                Exercise name
+              </label>
+              <input
+                type="text"
+                value={customExerciseName}
+                onChange={(e) => setCustomExerciseName(e.target.value)}
+                placeholder="e.g. Cable Fly"
+                className="w-full px-4 py-3 rounded-2xl bg-card border border-border shadow-neu-inset text-foreground"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-2">
+                Equipment (optional)
+              </label>
+              <input
+                type="text"
+                value={customExerciseEquipment}
+                onChange={(e) => setCustomExerciseEquipment(e.target.value)}
+                placeholder="e.g. Cable, Dumbbell"
+                className="w-full px-4 py-3 rounded-2xl bg-card border border-border shadow-neu-inset text-foreground"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2 sm:flex-row">
+            <Button variant="outline" className="rounded-full" onClick={() => setCreateCustomOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="rounded-full"
+              onClick={handleCreateCustomExercise}
+              disabled={!customExerciseName.trim()}
+            >
+              Create & add to routine
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

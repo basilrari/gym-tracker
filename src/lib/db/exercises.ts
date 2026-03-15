@@ -24,6 +24,32 @@ export async function getExerciseById(id: number): Promise<Exercise | null> {
   return data as Exercise;
 }
 
+export async function createExercise(
+  userId: string,
+  name: string,
+  equipment?: string | null
+): Promise<Exercise> {
+  const supabase = await createClient();
+  const slug =
+    name
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "") || "custom";
+  const { data, error } = await supabase
+    .from("exercises")
+    .insert({
+      name: name.trim(),
+      slug: `${slug}-${Date.now()}`,
+      equipment: equipment?.trim() || null,
+      is_default: false,
+      created_by: userId,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Exercise;
+}
+
 export type ExerciseHistoryEntry = {
   workout_id: string;
   workout_date: string;

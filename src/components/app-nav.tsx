@@ -23,8 +23,8 @@ export function AppNav() {
   if (isWorkoutPage) return null;
 
   return (
-    <nav className="fixed bottom-6 left-4 right-4 z-50 max-w-md mx-auto bg-card shadow-neu-extruded rounded-[2rem] p-2">
-      <div className="flex justify-around items-center">
+    <nav className="flex-shrink-0 w-full bg-card border-t border-border shadow-neu-inset px-2 py-3 pb-6">
+      <div className="max-w-md mx-auto flex justify-around items-center">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -36,7 +36,7 @@ export function AppNav() {
               className={cn(
                 "flex flex-col items-center justify-center gap-1 px-4 py-2 min-w-[64px] rounded-full transition-all duration-250",
                 isActive
-                  ? "text-primary shadow-neu-pressed bg-background/50"
+                  ? "text-primary shadow-neu-pressed bg-background"
                   : "text-muted-foreground hover:text-foreground active:scale-95 active:shadow-neu-pressed"
               )}
             >

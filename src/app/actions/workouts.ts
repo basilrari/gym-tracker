@@ -28,3 +28,8 @@ export async function startWorkoutFromForm(formData: FormData) {
     (templateName as string) || undefined
   );
 }
+
+/** Start an empty workout (no template). */
+export async function startWorkoutEmptyForm() {
+  await startWorkoutAction(null, "Custom workout");
+}

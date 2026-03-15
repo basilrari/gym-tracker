@@ -111,13 +111,21 @@ export function HomeClient({
               </svg>
             </div>
             
-            <div className="absolute -bottom-6 z-10">
+            <div className="absolute -bottom-6 z-10 flex flex-col items-center gap-3">
               <Button
                 size="icon-lg"
                 className="rounded-full h-[72px] w-[72px] shadow-[0_0_20px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_25px_hsl(var(--primary)/0.6)] animate-pulse-slow"
                 onClick={() => startWorkoutAction(suggestedTemplate?.id, suggestedTemplate?.name)}
               >
                 <Play className="h-8 w-8 ml-1" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full text-muted-foreground hover:text-foreground text-xs"
+                onClick={() => startWorkoutAction(null, "Custom workout")}
+              >
+                Start empty workout
               </Button>
             </div>
           </div>

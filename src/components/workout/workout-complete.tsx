@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Check, Trash2 } from "lucide-react";
+import { Check, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,7 +14,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { deleteWorkoutFromForm } from "@/app/actions/end-workout";
+import { deleteWorkoutFromForm, updateWorkoutAction } from "@/app/actions/end-workout";
 import type { WorkoutWithSets } from "@/lib/db/types";
 
 type WorkoutCompleteProps = {
@@ -21,8 +22,11 @@ type WorkoutCompleteProps = {
 };
 
 export function WorkoutComplete({ workout }: WorkoutCompleteProps) {
+  const router = useRouter();
   const [showConfetti, setShowConfetti] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editName, setEditName] = useState(workout.name);
 
   useEffect(() => {
     setShowConfetti(true);
@@ -86,6 +90,16 @@ export function WorkoutComplete({ workout }: WorkoutCompleteProps) {
           type="button"
           variant="ghost"
           size="sm"
+          className="w-full rounded-full text-muted-foreground hover:text-foreground"
+          onClick={() => { setEditDialogOpen(true); setEditName(workout.name); }}
+        >
+          <Pencil className="h-4 w-4 mr-2" />
+          Edit workout name
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
           className="w-full rounded-full text-muted-foreground hover:text-destructive"
           onClick={() => setDeleteDialogOpen(true)}
         >
@@ -93,6 +107,39 @@ export function WorkoutComplete({ workout }: WorkoutCompleteProps) {
           Delete workout
         </Button>
       </motion.div>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Edit workout name</DialogTitle>
+            <DialogDescription>
+              Change the name of this workout in your history.
+            </DialogDescription>
+          </DialogHeader>
+          <input
+            type="text"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            className="w-full px-4 py-3 rounded-2xl bg-card border border-border shadow-neu-inset text-foreground"
+            placeholder="Workout name"
+          />
+          <DialogFooter className="flex gap-2 sm:flex-row">
+            <Button variant="outline" className="rounded-full" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="rounded-full"
+              onClick={async () => {
+                await updateWorkoutAction(workout.id, editName);
+                setEditDialogOpen(false);
+                router.refresh();
+              }}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="rounded-3xl">

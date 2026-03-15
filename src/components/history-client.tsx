@@ -95,7 +95,7 @@ export function HistoryClient({ workouts, templates }: HistoryClientProps) {
   };
 
   return (
-    <div className="p-4 space-y-6 max-w-lg mx-auto pb-32">
+    <div className="p-4 space-y-6 max-w-lg mx-auto pb-8">
       <div className="text-center space-y-1 mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           History
