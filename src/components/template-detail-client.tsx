@@ -20,13 +20,13 @@ import { updateTemplateAction, addTemplateExerciseAction, removeTemplateExercise
 import { createExerciseAction } from "@/app/actions/exercises";
 
 const DAY_LABELS: { value: number; label: string }[] = [
-  { value: 1, label: "Mon" },
-  { value: 2, label: "Tue" },
-  { value: 3, label: "Wed" },
-  { value: 4, label: "Thu" },
-  { value: 5, label: "Fri" },
-  { value: 6, label: "Sat" },
-  { value: 7, label: "Sun" },
+  { value: 1, label: "M" },
+  { value: 2, label: "T" },
+  { value: 3, label: "W" },
+  { value: 4, label: "T" },
+  { value: 5, label: "F" },
+  { value: 6, label: "S" },
+  { value: 7, label: "S" },
 ];
 
 type TemplateDetailClientProps = {
@@ -66,6 +66,18 @@ export function TemplateDetailClient({
   const [editTargetRepsMin, setEditTargetRepsMin] = useState<number | null>(null);
   const [editTargetRepsMax, setEditTargetRepsMax] = useState<number | null>(null);
   const [editIsWarmup, setEditIsWarmup] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
+
+  async function handleStartWorkout() {
+    setIsStarting(true);
+    try {
+      await startWorkoutAction(template.id, template.name);
+    } finally {
+      setIsStarting(false);
+      setShowConfirmDialog(false);
+    }
+  }
 
   async function toggleDay(day: number) {
     const next = scheduledDays.includes(day)
@@ -283,7 +295,7 @@ export function TemplateDetailClient({
         <Button
           size="icon-lg"
           className="rounded-full h-[88px] w-[88px] shadow-[0_0_20px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_25px_hsl(var(--primary)/0.6)] animate-pulse-slow"
-          onClick={() => startWorkoutAction(template.id, template.name)}
+          onClick={() => setShowConfirmDialog(true)}
         >
           <Play className="h-10 w-10 ml-1" />
         </Button>
@@ -399,7 +411,16 @@ export function TemplateDetailClient({
                           min={1}
                           max={20}
                           value={editTargetSets}
-                          onChange={(e) => setEditTargetSets(Math.max(1, parseInt(e.target.value) || 1))}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === "") {
+                              setEditTargetSets(0);
+                            } else {
+                              const num = parseInt(val, 10);
+                              setEditTargetSets(Number.isNaN(num) ? 0 : num);
+                            }
+                          }}
+                          onBlur={() => setEditTargetSets((v) => Math.max(1, v || 1))}
                           className="w-16 h-11 rounded-lg shadow-neu-inset bg-card border-0 text-center text-base font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[44px] touch-manipulation"
                         />
                       </div>
@@ -410,7 +431,15 @@ export function TemplateDetailClient({
                           min={1}
                           max={100}
                           value={editTargetRepsMin ?? ""}
-                          onChange={(e) => setEditTargetRepsMin(e.target.value ? parseInt(e.target.value) : null)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === "") {
+                              setEditTargetRepsMin(null);
+                            } else {
+                              const num = parseInt(val, 10);
+                              setEditTargetRepsMin(Number.isNaN(num) ? null : num);
+                            }
+                          }}
                           placeholder="Min"
                           className="w-16 h-11 rounded-lg shadow-neu-inset bg-card border-0 text-center text-base font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[44px] touch-manipulation"
                         />
@@ -420,7 +449,15 @@ export function TemplateDetailClient({
                           min={1}
                           max={100}
                           value={editTargetRepsMax ?? ""}
-                          onChange={(e) => setEditTargetRepsMax(e.target.value ? parseInt(e.target.value) : null)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === "") {
+                              setEditTargetRepsMax(null);
+                            } else {
+                              const num = parseInt(val, 10);
+                              setEditTargetRepsMax(Number.isNaN(num) ? null : num);
+                            }
+                          }}
                           placeholder="Max"
                           className="w-16 h-11 rounded-lg shadow-neu-inset bg-card border-0 text-center text-base font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[44px] touch-manipulation"
                         />
@@ -589,6 +626,74 @@ export function TemplateDetailClient({
               disabled={!customExerciseName.trim()}
             >
               Create & add to routine
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Start Workout Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="rounded-3xl sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Ready to Workout?</DialogTitle>
+            <DialogDescription className="text-sm">
+              Review today&apos;s exercises before starting the timer.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 max-h-[50vh] overflow-y-auto scrollbar-neu">
+            <h3 className="font-bold text-lg mb-3 px-1">{template.name}</h3>
+            <div className="space-y-2">
+              {exercises.map((te, i) => (
+                <div key={te.id} className="flex items-center gap-3 p-3 rounded-2xl bg-card/50 shadow-neu-inset">
+                  <div className="h-7 w-7 rounded-full shadow-neu-extruded flex items-center justify-center text-primary text-xs font-bold flex-shrink-0">
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">
+                      {te.display_name ?? te.exercise.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {te.target_sets} sets
+                      {te.target_reps_min && ` × ${te.target_reps_min}${te.target_reps_max && te.target_reps_max !== te.target_reps_min ? `-${te.target_reps_max}` : ""} reps`}
+                      {te.is_warmup && " (warmup)"}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {exercises.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No exercises configured for this workout.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-4">
+            <Button
+              variant="outline"
+              className="rounded-full h-12 flex-1 touch-manipulation min-h-[48px]"
+              onClick={() => setShowConfirmDialog(false)}
+              disabled={isStarting}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="rounded-full h-12 flex-1 touch-manipulation min-h-[48px]"
+              onClick={handleStartWorkout}
+              disabled={isStarting || exercises.length === 0}
+            >
+              {isStarting ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />
+                  Starting...
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4 mr-2" />
+                  Confirm & start
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

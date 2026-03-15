@@ -2,10 +2,17 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Play, Flame, Dumbbell, TrendingUp, Trophy } from "lucide-react";
+import { Play, Flame, Dumbbell, TrendingUp, Trophy, Clock, X, Check } from "lucide-react";
 import { SignOutButton } from "@/components/app-nav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import type { Profile, WorkoutTemplate, LeaderboardRow } from "@/lib/db/types";
 import type { WeekStats } from "@/lib/db/analytics";
 import Link from "next/link";
@@ -37,6 +44,19 @@ export function HomeClient({
   startWorkoutAction,
 }: HomeClientProps) {
   const [mode, setMode] = useState<"me" | "community">("me");
+  const [confirmWorkout, setConfirmWorkout] = useState<{ templateId: string | null; name: string } | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
+
+  const handleStartWorkout = async () => {
+    if (!confirmWorkout) return;
+    setIsStarting(true);
+    try {
+      await startWorkoutAction(confirmWorkout.templateId, confirmWorkout.name);
+    } finally {
+      setIsStarting(false);
+      setConfirmWorkout(null);
+    }
+  };
 
   const volumeDiff =
     weekStats.volumeLastWeek > 0
@@ -116,7 +136,7 @@ export function HomeClient({
               <Button
                 size="icon-lg"
                 className="rounded-full h-[72px] w-[72px] shadow-[0_0_20px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_25px_hsl(var(--primary)/0.6)] animate-pulse-slow text-primary-foreground touch-manipulation active:scale-[0.98] transition-transform min-h-[72px] min-w-[72px]"
-                onClick={() => startWorkoutAction(suggestedTemplate?.id, suggestedTemplate?.name)}
+                onClick={() => setConfirmWorkout({ templateId: suggestedTemplate?.id ?? null, name: suggestedTemplate?.name ?? "Custom workout" })}
               >
                 <Play className="h-8 w-8 ml-1" fill="currentColor" />
               </Button>
@@ -124,7 +144,7 @@ export function HomeClient({
                 variant="ghost"
                 size="sm"
                 className="rounded-full text-muted-foreground hover:text-foreground text-xs px-6 py-3 touch-manipulation active:scale-[0.98] transition-transform min-h-[40px]"
-                onClick={() => startWorkoutAction(null, "Custom workout")}
+                onClick={() => setConfirmWorkout({ templateId: null, name: "Custom workout" })}
               >
                 Start empty workout
               </Button>
@@ -162,7 +182,7 @@ export function HomeClient({
                    animate={{ opacity: 1, x: 0 }}
                    transition={{ delay: i * 0.1 }}
                    className="flex items-center justify-between gap-4 p-5 rounded-3xl bg-card shadow-neu-extruded active:shadow-neu-pressed active:scale-[0.98] transition-all cursor-pointer group touch-manipulation min-h-[80px]"
-                   onClick={() => startWorkoutAction(t.id, t.name)}
+                   onClick={() => setConfirmWorkout({ templateId: t.id, name: t.name })}
                  >
                     <div className="min-w-0 flex-1 py-1">
                       <p className="font-medium group-hover:text-primary transition-colors break-words text-base sm:text-lg leading-tight">{t.name}</p>
@@ -241,6 +261,58 @@ export function HomeClient({
           </div>
         </div>
       )}
+
+      {/* Start Workout Confirmation Dialog */}
+      <Dialog open={!!confirmWorkout} onOpenChange={(o) => !o && setConfirmWorkout(null)}>
+        <DialogContent className="rounded-3xl max-w-sm mx-auto">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">Ready to Workout?</DialogTitle>
+            <DialogDescription className="text-center text-sm text-muted-foreground">
+              Review today&apos;s workout before starting the timer
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            <div className="p-4 rounded-2xl bg-card shadow-neu-inset text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Workout</p>
+              <p className="font-bold text-lg break-words">{confirmWorkout?.name}</p>
+            </div>
+            
+            {confirmWorkout?.templateId && templates.find(t => t.id === confirmWorkout.templateId)?.scheduled_days && (
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Clock className="h-3.5 w-3.5" />
+                <span>Scheduled workout</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1 rounded-full h-12 touch-manipulation min-h-[48px]"
+              onClick={() => setConfirmWorkout(null)}
+              disabled={isStarting}
+            >
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 rounded-full h-12 touch-manipulation min-h-[48px]"
+              onClick={handleStartWorkout}
+              disabled={isStarting}
+            >
+              {isStarting ? (
+                <span className="animate-pulse">Starting...</span>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Confirm & Start
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
