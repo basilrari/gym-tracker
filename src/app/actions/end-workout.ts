@@ -1,10 +1,8 @@
 "use server";
 
-"use server";
-
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { endWorkout } from "@/lib/db/workouts";
+import { endWorkout, deleteWorkout } from "@/lib/db/workouts";
 import { subDays } from "date-fns";
 
 export async function endWorkoutAction(workoutId: string) {
@@ -32,4 +30,24 @@ export async function endWorkoutAction(workoutId: string) {
   });
 
   redirect(`/workout/${workoutId}/complete`);
+}
+
+export async function deleteWorkoutAction(workoutId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  await deleteWorkout(workoutId);
+  redirect("/");
+}
+
+/** For use in forms: pass workoutId as form field. */
+export async function endWorkoutFromForm(formData: FormData) {
+  const id = formData.get("workoutId");
+  if (typeof id === "string" && id) await endWorkoutAction(id);
+}
+
+/** For use in forms: pass workoutId as form field. */
+export async function deleteWorkoutFromForm(formData: FormData) {
+  const id = formData.get("workoutId");
+  if (typeof id === "string" && id) await deleteWorkoutAction(id);
 }

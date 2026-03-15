@@ -3,9 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Check, Trophy } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { deleteWorkoutFromForm } from "@/app/actions/end-workout";
 import type { WorkoutWithSets } from "@/lib/db/types";
 
 type WorkoutCompleteProps = {
@@ -14,6 +22,7 @@ type WorkoutCompleteProps = {
 
 export function WorkoutComplete({ workout }: WorkoutCompleteProps) {
   const [showConfetti, setShowConfetti] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     setShowConfetti(true);
@@ -66,14 +75,47 @@ export function WorkoutComplete({ workout }: WorkoutCompleteProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
-        className="pt-4"
+        className="pt-4 space-y-3"
       >
         <Link href="/">
           <Button size="xl" className="w-full rounded-full text-lg shadow-neu-extruded font-bold h-16">
             Finish & Return Home
           </Button>
         </Link>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="w-full rounded-full text-muted-foreground hover:text-destructive"
+          onClick={() => setDeleteDialogOpen(true)}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Delete workout
+        </Button>
       </motion.div>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Delete this workout?</DialogTitle>
+            <DialogDescription>
+              This will remove the workout from your history. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row">
+            <Button variant="outline" className="rounded-full" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <form action={deleteWorkoutFromForm} className="inline">
+              <input type="hidden" name="workoutId" value={workout.id} />
+              <Button type="submit" variant="destructive" className="rounded-full">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </form>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -2,17 +2,23 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTemplatesForUser } from "@/lib/db/templates";
 import Link from "next/link";
-import { startWorkoutAction } from "@/app/actions/workouts";
+import { startWorkoutFromForm } from "@/app/actions/workouts";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ChevronRight, Play } from "lucide-react";
+import { ChevronRight, Play, AlertCircle } from "lucide-react";
+import type { WorkoutTemplate } from "@/lib/db/types";
 
 export default async function TemplatesPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const templates = await getTemplatesForUser(user.id);
+  let templates: WorkoutTemplate[] = [];
+  let loadError = false;
+  try {
+    templates = await getTemplatesForUser(user.id);
+  } catch {
+    loadError = true;
+  }
 
   return (
     <div className="p-4 space-y-6 max-w-lg mx-auto pb-32">
@@ -20,6 +26,13 @@ export default async function TemplatesPage() {
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Routines</h1>
         <p className="text-muted-foreground text-xs uppercase tracking-wider">Your workout templates</p>
       </div>
+
+      {loadError && (
+        <div className="flex items-center gap-2 p-4 rounded-2xl bg-destructive/10 text-destructive text-sm">
+          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+          <span>Couldn’t load routines. Check your connection and try again.</span>
+        </div>
+      )}
 
       <div className="space-y-4">
         {templates.map((template) => (
@@ -34,7 +47,9 @@ export default async function TemplatesPage() {
               </div>
               <span className="text-xs text-muted-foreground uppercase tracking-wider">{template.description || "Custom workout"}</span>
             </Link>
-            <form action={() => startWorkoutAction(template.id, template.name)} className="ml-4">
+            <form action={startWorkoutFromForm} className="ml-4">
+              <input type="hidden" name="templateId" value={template.id} />
+              <input type="hidden" name="templateName" value={template.name} />
               <Button type="submit" size="icon" variant="ghost" className="rounded-full h-12 w-12 shadow-neu-inset bg-card group-hover:shadow-neu-extruded active:shadow-neu-pressed transition-all">
                 <Play className="h-5 w-5 text-primary ml-0.5 group-hover:drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)]" />
               </Button>

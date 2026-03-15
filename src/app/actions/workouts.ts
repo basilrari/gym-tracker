@@ -18,3 +18,13 @@ export async function startWorkoutAction(
   const workout = await createWorkout(user.id, templateId ?? null, name);
   redirect(`/workout/${workout.id}`);
 }
+
+/** Use from forms with hidden inputs: templateId, templateName */
+export async function startWorkoutFromForm(formData: FormData) {
+  const templateId = formData.get("templateId") as string | null;
+  const templateName = formData.get("templateName") as string | null;
+  await startWorkoutAction(
+    templateId && templateId.length > 0 ? templateId : null,
+    (templateName as string) || undefined
+  );
+}

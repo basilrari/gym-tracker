@@ -2,14 +2,23 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Plus, Minus, Flag, Square, Trophy } from "lucide-react";
+import { Check, Plus, Minus, Flag, Square, Trophy, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { RestTimer } from "./rest-timer";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { saveSetAction } from "@/app/actions/sets";
-import { endWorkoutAction } from "@/app/actions/end-workout";
+import { endWorkoutFromForm, deleteWorkoutFromForm } from "@/app/actions/end-workout";
 import type { WorkoutWithSets, TemplateWithExercises } from "@/lib/db/types";
 import type { ExerciseHistoryEntry } from "@/lib/db/exercises";
+
+type EndDialogStep = "choice" | "confirm-save" | "confirm-discard";
 
 type WorkoutLoggerProps = {
   workout: WorkoutWithSets;
@@ -34,6 +43,8 @@ export function WorkoutLogger({
   const [lastSavedSet, setLastSavedSet] = useState<{ exerciseId: number; weight: number } | null>(null);
   const [restTimerActive, setRestTimerActive] = useState(false);
   const [weightIncreased, setWeightIncreased] = useState(false);
+  const [endDialogOpen, setEndDialogOpen] = useState(false);
+  const [endDialogStep, setEndDialogStep] = useState<EndDialogStep>("choice");
 
   useEffect(() => {
     const start = new Date(workout.start_time).getTime();
@@ -106,18 +117,28 @@ export function WorkoutLogger({
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
+  const openEndDialog = () => {
+    setEndDialogStep("choice");
+    setEndDialogOpen(true);
+  };
+
   if (templateExercises.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 max-w-lg mx-auto">
         <div className="p-8 rounded-3xl bg-card shadow-neu-extruded text-center space-y-6">
           <p className="text-muted-foreground font-medium">No exercises in this workout.</p>
           <p className="text-sm text-muted-foreground">Add exercises from a template or end and start a new one.</p>
-          <form action={() => endWorkoutAction(workout.id)}>
-            <Button type="submit" variant="default" className="rounded-full w-full">
-              End Workout
-            </Button>
-          </form>
+          <Button type="button" variant="default" className="rounded-full w-full" onClick={openEndDialog}>
+            End Workout
+          </Button>
         </div>
+        <EndWorkoutDialog
+          open={endDialogOpen}
+          onOpenChange={setEndDialogOpen}
+          step={endDialogStep}
+          onStepChange={setEndDialogStep}
+          workoutId={workout.id}
+        />
       </div>
     );
   }
@@ -149,11 +170,16 @@ export function WorkoutLogger({
               </svg>
             </div>
             
-            <form action={() => endWorkoutAction(workout.id)}>
-              <Button type="submit" variant="ghost" size="icon" className="h-12 w-12 rounded-full shadow-neu-extruded text-destructive hover:text-destructive active:shadow-neu-pressed">
-                <Square className="h-5 w-5" />
-              </Button>
-            </form>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-12 w-12 rounded-full shadow-neu-extruded text-destructive hover:text-destructive active:shadow-neu-pressed"
+              onClick={openEndDialog}
+              aria-label="End or discard workout"
+            >
+              <Square className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </div>
@@ -353,6 +379,107 @@ export function WorkoutLogger({
         onComplete={() => setRestTimerActive(false)}
         onSkip={() => setRestTimerActive(false)}
       />
+
+      <EndWorkoutDialog
+        open={endDialogOpen}
+        onOpenChange={setEndDialogOpen}
+        step={endDialogStep}
+        onStepChange={setEndDialogStep}
+        workoutId={workout.id}
+      />
     </div>
+  );
+}
+
+function EndWorkoutDialog({
+  open,
+  onOpenChange,
+  step,
+  onStepChange,
+  workoutId,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  step: EndDialogStep;
+  onStepChange: (s: EndDialogStep) => void;
+  workoutId: string;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent showClose={step === "choice"} className="rounded-3xl">
+        {step === "choice" && (
+          <>
+            <DialogHeader>
+              <DialogTitle>End workout?</DialogTitle>
+              <DialogDescription>
+                Save and finish this workout, or discard it and leave without saving.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex flex-col gap-2 sm:flex-row">
+              <Button variant="outline" className="rounded-full" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                className="rounded-full"
+                onClick={() => onStepChange("confirm-discard")}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Discard workout
+              </Button>
+              <Button
+                className="rounded-full"
+                onClick={() => onStepChange("confirm-save")}
+              >
+                Save & finish
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+        {step === "confirm-save" && (
+          <>
+            <DialogHeader>
+              <DialogTitle>Save and finish?</DialogTitle>
+              <DialogDescription>
+                This will save your workout and show the summary. You can view it in your history later.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex flex-col gap-2 sm:flex-row">
+              <Button variant="outline" className="rounded-full" onClick={() => onStepChange("choice")}>
+                Back
+              </Button>
+              <form action={endWorkoutFromForm} className="inline">
+                <input type="hidden" name="workoutId" value={workoutId} />
+                <Button type="submit" className="rounded-full">
+                  Save & finish
+                </Button>
+              </form>
+            </DialogFooter>
+          </>
+        )}
+        {step === "confirm-discard" && (
+          <>
+            <DialogHeader>
+              <DialogTitle>Discard this workout?</DialogTitle>
+              <DialogDescription>
+                All logged sets will be lost. This cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex flex-col gap-2 sm:flex-row">
+              <Button variant="outline" className="rounded-full" onClick={() => onStepChange("choice")}>
+                Back
+              </Button>
+              <form action={deleteWorkoutFromForm} className="inline">
+                <input type="hidden" name="workoutId" value={workoutId} />
+                <Button type="submit" variant="destructive" className="rounded-full">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Discard
+                </Button>
+              </form>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
