@@ -15,7 +15,7 @@ import {
 
 export async function updateTemplateAction(
   templateId: string,
-  data: { name?: string; description?: string; scheduled_days?: number[] }
+  data: { name?: string; description?: string | null; scheduled_days?: number[] }
 ) {
   await updateTemplate(templateId, data);
   revalidatePath("/");

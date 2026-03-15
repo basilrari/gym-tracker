@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import type { TemplateWithExercises } from "@/lib/db/types";
 import type { Exercise } from "@/lib/db/types";
@@ -95,7 +96,7 @@ export function TemplateDetailClient({
       template.id,
       exerciseId,
       exercises.length,
-      1
+      { targetSets: 1 }
     );
     setAddExerciseOpen(false);
     setExerciseSearch("");
@@ -107,7 +108,7 @@ export function TemplateDetailClient({
     if (!name) return;
     const exercise = await createExerciseAction(name, customExerciseEquipment.trim() || null);
     if (exercise) {
-      await addTemplateExerciseAction(template.id, exercise.id, exercises.length, 1);
+      await addTemplateExerciseAction(template.id, exercise.id, exercises.length, { targetSets: 1 });
       setCreateCustomOpen(false);
       setAddExerciseOpen(false);
       setCustomExerciseName("");
