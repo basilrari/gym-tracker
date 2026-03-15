@@ -185,8 +185,8 @@ export function WorkoutLogger({
       </div>
 
       <div className="w-full max-w-lg p-4 space-y-6 flex-1 flex flex-col">
-        {/* Exercise Nav Pills */}
-        <div className="flex gap-3 overflow-x-auto pb-4 px-1 -mx-1 snap-x">
+        {/* Exercise list – vertical stack with custom scrollbar */}
+        <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto scrollbar-neu rounded-2xl pr-1">
           {templateExercises.map((te, i) => {
             const completed = sets.filter((s) => s.exercise_id === te.exercise_id).length >= te.target_sets;
             const isActive = i === currentExerciseIndex;
@@ -195,15 +195,15 @@ export function WorkoutLogger({
                 key={te.id}
                 type="button"
                 onClick={() => setCurrentExerciseIndex(i)}
-                className={`snap-center flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-250 ${
+                className={`w-full text-left px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-250 ${
                   isActive
                     ? "text-primary shadow-neu-pressed bg-background/50"
                     : completed
                     ? "text-muted-foreground shadow-neu-inset bg-card opacity-60"
-                    : "text-foreground shadow-neu-extruded bg-card active:scale-95 active:shadow-neu-pressed"
+                    : "text-foreground shadow-neu-extruded bg-card active:scale-[0.99] active:shadow-neu-pressed"
                 }`}
               >
-                {te.exercise.name.slice(0, 15)}{te.exercise.name.length > 15 ? '...' : ''}
+                {te.exercise.name}
               </button>
             );
           })}
@@ -246,7 +246,7 @@ export function WorkoutLogger({
               </AnimatePresence>
             </div>
 
-            {/* Input Controls */}
+            {/* Input Controls – weight and reps with manual entry + steppers */}
             {nextSetIndex < targetSets && (
               <div className="p-6 rounded-3xl shadow-neu-extruded bg-card mt-auto space-y-8">
                 <div className="flex items-center justify-between px-2">
@@ -262,9 +262,18 @@ export function WorkoutLogger({
                       >
                         <Minus className="h-5 w-5" />
                       </Button>
-                      <div className="w-16 h-16 flex items-center justify-center rounded-full shadow-neu-inset bg-card">
-                        <span className="font-bold text-xl">{weight}</span>
-                      </div>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.5}
+                        value={weight}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                          setWeight(Number.isNaN(v) ? 0 : Math.max(0, v));
+                        }}
+                        className="w-16 h-16 rounded-full shadow-neu-inset bg-card border-0 text-center text-xl font-bold text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        aria-label="Weight in kg"
+                      />
                       <Button
                         type="button"
                         size="icon"
@@ -291,9 +300,18 @@ export function WorkoutLogger({
                       >
                         <Minus className="h-5 w-5" />
                       </Button>
-                      <div className="w-16 h-16 flex items-center justify-center rounded-full shadow-neu-inset bg-card">
-                        <span className="font-bold text-xl">{reps}</span>
-                      </div>
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={reps}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? 1 : parseInt(e.target.value, 10);
+                          setReps(Number.isNaN(v) ? 1 : Math.max(1, v));
+                        }}
+                        className="w-16 h-16 rounded-full shadow-neu-inset bg-card border-0 text-center text-xl font-bold text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        aria-label="Reps"
+                      />
                       <Button
                         type="button"
                         size="icon"

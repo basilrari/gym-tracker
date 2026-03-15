@@ -2,12 +2,20 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Play, ChevronLeft, GripVertical, Calendar } from "lucide-react";
+import { Play, ChevronLeft, GripVertical, Calendar, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import type { TemplateWithExercises } from "@/lib/db/types";
-import { updateTemplateAction } from "@/app/actions/templates";
+import type { Exercise } from "@/lib/db/types";
+import { updateTemplateAction, addTemplateExerciseAction, removeTemplateExerciseAction } from "@/app/actions/templates";
 
 const DAY_LABELS: { value: number; label: string }[] = [
   { value: 1, label: "Mon" },
@@ -21,6 +29,7 @@ const DAY_LABELS: { value: number; label: string }[] = [
 
 type TemplateDetailClientProps = {
   template: TemplateWithExercises;
+  allExercises: Exercise[];
   startWorkoutAction: (
     templateId?: string | null,
     name?: string
@@ -29,12 +38,22 @@ type TemplateDetailClientProps = {
 
 export function TemplateDetailClient({
   template,
+  allExercises,
   startWorkoutAction,
 }: TemplateDetailClientProps) {
+  const router = useRouter();
   const [exercises, setExercises] = useState(template.exercises);
   const [scheduledDays, setScheduledDays] = useState<number[]>(
     template.scheduled_days ?? []
   );
+  const [editingName, setEditingName] = useState(false);
+  const [editName, setEditName] = useState(template.name);
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [editDescription, setEditDescription] = useState(
+    template.description ?? ""
+  );
+  const [addExerciseOpen, setAddExerciseOpen] = useState(false);
+  const [exerciseSearch, setExerciseSearch] = useState("");
 
   async function toggleDay(day: number) {
     const next = scheduledDays.includes(day)
@@ -42,6 +61,47 @@ export function TemplateDetailClient({
       : [...scheduledDays, day].sort((a, b) => a - b);
     setScheduledDays(next);
     await updateTemplateAction(template.id, { scheduled_days: next });
+  }
+
+  async function saveName() {
+    const name = editName.trim() || template.name;
+    await updateTemplateAction(template.id, { name });
+    setEditName(name);
+    setEditingName(false);
+    router.refresh();
+  }
+
+  async function saveDescription() {
+    await updateTemplateAction(template.id, {
+      description: editDescription.trim() || null,
+    });
+    setEditingDesc(false);
+    router.refresh();
+  }
+
+  const existingExerciseIds = new Set(exercises.map((e) => e.exercise_id));
+  const availableExercises = allExercises.filter(
+    (e) =>
+      !existingExerciseIds.has(e.id) &&
+      e.name.toLowerCase().includes(exerciseSearch.toLowerCase())
+  );
+
+  async function addExercise(exerciseId: number) {
+    await addTemplateExerciseAction(
+      template.id,
+      exerciseId,
+      exercises.length,
+      1
+    );
+    setAddExerciseOpen(false);
+    setExerciseSearch("");
+    router.refresh();
+  }
+
+  async function removeExercise(templateExerciseId: string) {
+    await removeTemplateExerciseAction(templateExerciseId);
+    setExercises((prev) => prev.filter((e) => e.id !== templateExerciseId));
+    router.refresh();
   }
 
   return (
@@ -52,8 +112,76 @@ export function TemplateDetailClient({
             <ChevronLeft className="h-6 w-6 text-primary" />
           </Button>
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight flex-1">{template.name}</h1>
+        <div className="flex-1 min-w-0">
+          {editingName ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && saveName()}
+                className="flex-1 min-w-0 px-3 py-2 rounded-2xl bg-card border border-border text-lg font-bold"
+                autoFocus
+              />
+              <Button size="sm" className="rounded-full" onClick={saveName}>
+                Save
+              </Button>
+              <Button size="sm" variant="ghost" className="rounded-full" onClick={() => { setEditingName(false); setEditName(template.name); }}>
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditingName(true)}
+              className="flex items-center gap-2 w-full text-left group"
+            >
+              <h1 className="text-2xl font-bold tracking-tight truncate">{template.name}</h1>
+              <Pencil className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 flex-shrink-0" />
+            </button>
+          )}
+        </div>
       </div>
+      {(editingDesc || template.description) && (
+        <div className="px-2">
+          {editingDesc ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Description (optional)"
+                className="flex-1 min-w-0 px-3 py-2 rounded-2xl bg-card border border-border text-sm"
+                onKeyDown={(e) => e.key === "Enter" && saveDescription()}
+              />
+              <Button size="sm" className="rounded-full" onClick={saveDescription}>
+                Save
+              </Button>
+              <Button size="sm" variant="ghost" className="rounded-full" onClick={() => { setEditingDesc(false); setEditDescription(template.description ?? ""); }}>
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditingDesc(true)}
+              className="text-sm text-muted-foreground hover:text-foreground text-left flex items-center gap-2 group w-full"
+            >
+              <span className="truncate">{template.description || "Add description"}</span>
+              <Pencil className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 flex-shrink-0" />
+            </button>
+          )}
+        </div>
+      )}
+      {!editingDesc && !template.description && (
+        <button
+          type="button"
+          onClick={() => setEditingDesc(true)}
+          className="text-xs text-muted-foreground hover:text-foreground px-2"
+        >
+          + Add description
+        </button>
+      )}
 
       <div className="flex justify-center py-4">
         <Button
@@ -93,14 +221,26 @@ export function TemplateDetailClient({
       </div>
 
       <div className="space-y-3 pt-4">
-        <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2">Exercises</h2>
+        <div className="flex items-center justify-between px-2">
+          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Exercises</h2>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="rounded-full gap-1 text-primary"
+            onClick={() => setAddExerciseOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            Add exercise
+          </Button>
+        </div>
         <div className="p-4 rounded-3xl bg-card shadow-neu-extruded space-y-3">
           {exercises.map((te, i) => (
             <motion.div
               key={te.id}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-3 p-4 rounded-2xl shadow-neu-inset bg-card"
+              className="flex items-center gap-3 p-4 rounded-2xl shadow-neu-inset bg-card group"
             >
               <GripVertical className="h-5 w-5 text-muted-foreground/50 flex-shrink-0" />
               <div className="flex-1 min-w-0">
@@ -110,13 +250,65 @@ export function TemplateDetailClient({
                   {te.is_warmup && " (WARMUP)"}
                 </p>
               </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-full text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => removeExercise(te.id)}
+                aria-label="Remove exercise"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </motion.div>
           ))}
           {exercises.length === 0 && (
-            <p className="text-sm text-muted-foreground py-4 text-center">No exercises added.</p>
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              No exercises added. Click &quot;Add exercise&quot; to build your routine.
+            </p>
           )}
         </div>
       </div>
+
+      <Dialog open={addExerciseOpen} onOpenChange={setAddExerciseOpen}>
+        <DialogContent className="rounded-3xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Add exercise</DialogTitle>
+            <DialogDescription>
+              Choose an exercise to add to this routine.
+            </DialogDescription>
+          </DialogHeader>
+          <input
+            type="search"
+            value={exerciseSearch}
+            onChange={(e) => setExerciseSearch(e.target.value)}
+            placeholder="Search exercises..."
+            className="w-full px-4 py-3 rounded-2xl bg-card border border-border text-foreground"
+          />
+          <div className="overflow-y-auto flex-1 min-h-0 space-y-1 -mx-2 px-2">
+            {availableExercises.length === 0 && (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                {exerciseSearch ? "No matching exercises." : "All exercises are already in this routine."}
+              </p>
+            )}
+            {availableExercises.map((ex) => (
+              <button
+                key={ex.id}
+                type="button"
+                onClick={() => addExercise(ex.id)}
+                className="w-full text-left px-4 py-3 rounded-2xl bg-card shadow-neu-inset hover:shadow-neu-extruded transition-all"
+              >
+                <span className="font-medium">{ex.name}</span>
+                {ex.equipment && (
+                  <span className="text-xs text-muted-foreground ml-2">
+                    {ex.equipment}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

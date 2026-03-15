@@ -99,6 +99,18 @@ export async function endWorkout(workoutId: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function updateWorkout(
+  workoutId: string,
+  data: Partial<Pick<Workout, "name" | "notes">>
+): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("workouts")
+    .update(data)
+    .eq("id", workoutId);
+  if (error) throw error;
+}
+
 export async function deleteWorkout(workoutId: string): Promise<void> {
   const supabase = await createClient();
   const { error } = await supabase.from("workouts").delete().eq("id", workoutId);

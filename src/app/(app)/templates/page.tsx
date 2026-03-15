@@ -3,8 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getTemplatesForUser } from "@/lib/db/templates";
 import Link from "next/link";
 import { startWorkoutFromForm } from "@/app/actions/workouts";
+import { createTemplateFormAction } from "@/app/actions/templates";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Play, AlertCircle } from "lucide-react";
+import { ChevronRight, Play, AlertCircle, Plus } from "lucide-react";
 import type { WorkoutTemplate } from "@/lib/db/types";
 
 export default async function TemplatesPage() {
@@ -33,6 +34,13 @@ export default async function TemplatesPage() {
           <span>Couldn’t load routines. Check your connection and try again.</span>
         </div>
       )}
+
+      <form action={createTemplateFormAction} className="block">
+        <Button type="submit" variant="outline" className="w-full rounded-full h-12 font-medium gap-2">
+          <Plus className="h-5 w-5" />
+          Create new routine
+        </Button>
+      </form>
 
       <div className="space-y-4">
         {templates.map((template) => (

@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Dumbbell, BarChart3, Trophy, LogOut } from "lucide-react";
+import { Home, Dumbbell, History, BarChart3, Trophy, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/templates", label: "Templates", icon: Dumbbell },
+  { href: "/templates", label: "Routines", icon: Dumbbell },
+  { href: "/history", label: "History", icon: History },
   { href: "/progress", label: "Progress", icon: BarChart3 },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ];

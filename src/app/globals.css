@@ -60,4 +60,24 @@
   .glow-primary {
     box-shadow: 0 0 15px 2px hsl(var(--primary) / 0.4);
   }
+  /* Custom scrollbar to match neuromorphic UI */
+  .scrollbar-neu {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--neu-light) / 0.5) hsl(var(--muted));
+  }
+  .scrollbar-neu::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-neu::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 9999px;
+  }
+  .scrollbar-neu::-webkit-scrollbar-thumb {
+    background: hsl(var(--neu-light) / 0.6);
+    border-radius: 9999px;
+  }
+  .scrollbar-neu::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--neu-light) / 0.8);
+  }
 }
