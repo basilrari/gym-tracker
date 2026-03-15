@@ -195,7 +195,7 @@ export function WorkoutLogger({
                 key={te.id}
                 type="button"
                 onClick={() => setCurrentExerciseIndex(i)}
-                className={`w-full text-left px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-250 ${
+                className={`w-full text-left px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-250 break-words ${
                   isActive
                     ? "text-primary shadow-neu-pressed bg-background/50"
                     : completed
@@ -212,7 +212,7 @@ export function WorkoutLogger({
         {currentExercise && (
           <div className="space-y-6 flex-1 flex flex-col">
             <div className="text-center space-y-1">
-              <h2 className="font-bold text-2xl tracking-tight">{currentExercise.exercise.name}</h2>
+              <h2 className="font-bold text-2xl tracking-tight break-words">{currentExercise.exercise.name}</h2>
               <p className="text-sm text-primary font-medium tracking-wide">
                 TARGET: {currentExercise.target_sets} SETS
                 {currentExercise.target_reps_min ? ` × ${currentExercise.target_reps_min}-${currentExercise.target_reps_max} REPS` : ""}
@@ -232,7 +232,7 @@ export function WorkoutLogger({
                     key={s.id}
                     initial={{ opacity: 0, height: 0, scale: 0.9 }}
                     animate={{ opacity: 1, height: "auto", scale: 1 }}
-                    className="flex justify-between items-center p-4 rounded-2xl shadow-neu-inset bg-card"
+                    className="flex justify-between items-center gap-4 p-5 rounded-2xl shadow-neu-inset bg-card"
                   >
                     <div className="flex items-center gap-4">
                       <div className="h-8 w-8 rounded-full shadow-neu-extruded flex items-center justify-center text-primary text-xs font-bold">

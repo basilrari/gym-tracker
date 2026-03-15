@@ -290,13 +290,13 @@ export function TemplateDetailClient({
             Add exercise
           </Button>
         </div>
-        <div className="p-4 rounded-3xl bg-card shadow-neu-extruded space-y-3">
+        <div className="p-4 rounded-3xl bg-card shadow-neu-extruded space-y-4">
           {exercises.map((te, i) => (
             <motion.div
               key={te.id}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-3 p-4 rounded-2xl shadow-neu-inset bg-card group"
+              className="flex items-center gap-4 p-5 rounded-2xl shadow-neu-inset bg-card group"
             >
               <div className="flex flex-col gap-0.5">
                 <Button
@@ -357,7 +357,7 @@ export function TemplateDetailClient({
                     }}
                     className="text-left w-full group/name"
                   >
-                    <p className="font-bold text-lg leading-tight truncate group-hover/name:text-primary transition-colors">
+                    <p className="font-bold text-lg leading-tight break-words group-hover/name:text-primary transition-colors">
                       {te.display_name ?? te.exercise.name}
                     </p>
                     <p className="text-xs font-medium text-primary mt-1 tracking-wide uppercase">

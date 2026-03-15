@@ -51,16 +51,16 @@ export default async function TemplatesPage() {
 
       <div className="space-y-4">
         {templates.map((template) => (
-          <div key={template.id} className="flex items-center justify-between p-4 rounded-3xl bg-card shadow-neu-extruded group">
+          <div key={template.id} className="flex items-center justify-between gap-4 p-5 rounded-3xl bg-card shadow-neu-extruded group">
             <Link
               href={`/templates/${template.id}`}
               className="flex-1 flex flex-col justify-center gap-1 min-w-0"
             >
               <div className="flex items-center gap-2">
-                <span className="font-bold text-lg truncate group-hover:text-primary transition-colors">{template.name}</span>
-                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity" />
+                <span className="font-bold text-lg break-words group-hover:text-primary transition-colors">{template.name}</span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0" />
               </div>
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">{template.description || "Custom workout"}</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider break-words">{template.description || "Custom workout"}</span>
             </Link>
             <form action={startWorkoutFromForm} className="ml-4">
               <input type="hidden" name="templateId" value={template.id} />

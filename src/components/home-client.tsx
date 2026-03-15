@@ -160,12 +160,12 @@ export function HomeClient({
                    initial={{ opacity: 0, x: -10 }}
                    animate={{ opacity: 1, x: 0 }}
                    transition={{ delay: i * 0.1 }}
-                   className="flex items-center justify-between p-4 rounded-3xl bg-card shadow-neu-extruded active:shadow-neu-pressed active:scale-[0.98] transition-all cursor-pointer group"
+                   className="flex items-center justify-between gap-4 p-5 rounded-3xl bg-card shadow-neu-extruded active:shadow-neu-pressed active:scale-[0.98] transition-all cursor-pointer group"
                    onClick={() => startWorkoutAction(t.id, t.name)}
                  >
-                    <div>
-                      <p className="font-medium group-hover:text-primary transition-colors">{t.name}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{t.description || "Custom workout"}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium group-hover:text-primary transition-colors break-words">{t.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 break-words">{t.description || "Custom workout"}</p>
                     </div>
                     <div className="flex items-center justify-center h-10 w-10 rounded-full shadow-neu-inset bg-card group-hover:shadow-neu-extruded transition-all">
                       <Play className="h-4 w-4 text-primary group-hover:drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)] ml-0.5" />

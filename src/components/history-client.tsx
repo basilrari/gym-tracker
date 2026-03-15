@@ -131,14 +131,14 @@ export function HistoryClient({ workouts, templates }: HistoryClientProps) {
         {filtered.map((w) => (
           <div
             key={w.id}
-            className="flex items-center gap-3 p-4 rounded-3xl bg-card shadow-neu-extruded"
+            className="flex items-center gap-4 p-5 rounded-3xl bg-card shadow-neu-extruded"
           >
             <Link
               href={`/workout/${w.id}/complete`}
               className="flex-1 flex flex-col gap-1 min-w-0"
             >
               <div className="flex items-center gap-2">
-                <span className="font-bold text-lg truncate">{w.name}</span>
+                <span className="font-bold text-lg break-words">{w.name}</span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               </div>
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
