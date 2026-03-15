@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -55,9 +57,8 @@ export default function SignupPage() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             placeholder="Min 6 characters"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -70,7 +71,14 @@ export default function SignupPage() {
           <p className="text-sm text-destructive">{error}</p>
         )}
         <Button type="submit" className="w-full" size="lg" disabled={loading}>
-          {loading ? "Creating account..." : "Sign up"}
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Creating account...
+            </>
+          ) : (
+            "Sign up"
+          )}
         </Button>
       </form>
 

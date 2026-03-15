@@ -41,3 +41,16 @@ npm run dev
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon/public key |
 
 Never commit `.env.local` or expose your service role key.
+
+## Troubleshooting
+
+**"Cannot find module './10.js'" or similar chunk error after login**  
+This happens when the dev server uses stale build artifacts. Run:
+
+```bash
+npm run clean
+npm run dev
+```
+
+**Email confirmation not formatted**  
+Copy the template from `supabase/templates/confirmation.html` into Supabase Dashboard → Authentication → Email Templates → Confirm signup. See `supabase/templates/README.md`.
