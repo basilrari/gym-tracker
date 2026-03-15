@@ -85,16 +85,13 @@ export function HomeClient({
         <div className="space-y-10">
           <div className="flex flex-col items-center justify-center relative py-8">
             <div className="relative w-56 h-56 flex items-center justify-center rounded-full shadow-neu-extruded bg-card">
-              <div className="absolute inset-3 rounded-full shadow-neu-inset bg-card flex flex-col items-center justify-center">
+              <div className="absolute inset-3 rounded-full shadow-neu-inset bg-card flex flex-col items-center justify-center overflow-hidden">
                 {suggestedTemplate ? (
-                  <>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Up Next</p>
-                    <p className="text-xl font-bold text-center px-6 leading-tight">{suggestedTemplate.name}</p>
-                  </>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Up Next</p>
                 ) : (
                   <>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Rest Day</p>
-                    <p className="text-xl font-bold text-center px-6 leading-tight">Recover</p>
+                    <p className="text-lg font-bold text-center px-4 leading-tight break-words">Recover</p>
                   </>
                 )}
               </div>
@@ -110,7 +107,11 @@ export function HomeClient({
                 />
               </svg>
             </div>
-            
+            {suggestedTemplate && (
+              <p className="text-center font-bold text-xl mt-4 px-4 w-full max-w-sm break-words pb-20">
+                {suggestedTemplate.name}
+              </p>
+            )}
             <div className="absolute -bottom-6 z-10 flex flex-col items-center gap-6">
               <Button
                 size="icon-lg"
