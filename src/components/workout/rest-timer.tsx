@@ -82,13 +82,14 @@ export function RestTimer({
             type="button"
             variant="ghost"
             size="icon"
-            className="rounded-full shadow-neu-extruded active:shadow-neu-pressed h-8 w-8 text-primary"
+            className="rounded-full shadow-neu-extruded active:shadow-neu-pressed h-9 w-9 text-primary flex items-center justify-center"
             onClick={() => setPaused((p) => !p)}
+            aria-label={paused ? "Resume" : "Pause"}
           >
             {paused ? (
-              <Play className="h-3 w-3 ml-0.5" />
+              <Play className="h-4 w-4 ml-0.5" fill="currentColor" />
             ) : (
-              <Pause className="h-3 w-3" />
+              <Pause className="h-4 w-4" fill="currentColor" />
             )}
           </Button>
           <Button

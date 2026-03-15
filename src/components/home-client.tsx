@@ -114,10 +114,10 @@ export function HomeClient({
             <div className="absolute -bottom-6 z-10 flex flex-col items-center gap-6">
               <Button
                 size="icon-lg"
-                className="rounded-full h-[72px] w-[72px] shadow-[0_0_20px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_25px_hsl(var(--primary)/0.6)] animate-pulse-slow"
+                className="rounded-full h-[72px] w-[72px] shadow-[0_0_20px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_25px_hsl(var(--primary)/0.6)] animate-pulse-slow text-primary-foreground"
                 onClick={() => startWorkoutAction(suggestedTemplate?.id, suggestedTemplate?.name)}
               >
-                <Play className="h-8 w-8 ml-1" />
+                <Play className="h-8 w-8 ml-1" fill="currentColor" />
               </Button>
               <Button
                 variant="ghost"
