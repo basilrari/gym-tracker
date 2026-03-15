@@ -1,3 +1,5 @@
+import { PageTransition } from "@/components/page-transition";
+
 export default function AuthLayout({
   children,
 }: {
@@ -5,7 +7,7 @@ export default function AuthLayout({
 }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
-      {children}
+      <PageTransition>{children}</PageTransition>
     </div>
   );
 }

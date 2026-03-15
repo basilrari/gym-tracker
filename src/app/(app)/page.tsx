@@ -23,7 +23,15 @@ export default async function HomePage() {
       getMyRank(user.id, "7d"),
     ]);
 
-  const suggestedTemplate = templates[0] ?? null;
+  const dayOfWeekDb = (() => {
+    const d = new Date().getDay();
+    return d === 0 ? 7 : d;
+  })();
+  const suggestedTemplate =
+    templates.find(
+      (t) =>
+        !t.scheduled_days?.length || t.scheduled_days.includes(dayOfWeekDb)
+    ) ?? templates[0] ?? null;
 
   return (
     <HomeClient

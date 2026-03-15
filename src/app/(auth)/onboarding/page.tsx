@@ -64,55 +64,59 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-primary">Complete your profile</h1>
-        <p className="text-muted-foreground mt-1">Set up your gym tracker</p>
+    <div className="w-full max-w-sm space-y-8 mt-4 mb-12">
+      <div className="text-center space-y-2">
+        <h1 className="text-2xl font-bold text-foreground">Complete Profile</h1>
+        <p className="text-muted-foreground text-xs uppercase tracking-wider">Set up your gym tracker</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="username">Username *</Label>
+      <form onSubmit={handleSubmit} className="space-y-5 p-6 rounded-3xl shadow-neu-extruded bg-card">
+        <div className="space-y-3">
+          <Label htmlFor="username" className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Username *</Label>
           <Input
             id="username"
             placeholder="johndoe"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
+            className="h-12"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="displayName">Display name</Label>
+        <div className="space-y-3">
+          <Label htmlFor="displayName" className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Display name</Label>
           <Input
             id="displayName"
             placeholder="John"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
+            className="h-12"
           />
         </div>
-        <div className="space-y-2">
-          <Label>Units</Label>
-          <div className="flex gap-2">
-            <Button
+        <div className="space-y-3">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Units</Label>
+          <div className="flex rounded-full shadow-neu-inset bg-card p-1">
+            <button
               type="button"
-              variant={units === "kg" ? "default" : "outline"}
-              className="flex-1"
+              className={`flex-1 py-2 px-4 rounded-full text-sm font-bold transition-all duration-250 ${
+                units === "kg" ? "bg-primary text-primary-foreground shadow-neu-extruded" : "text-muted-foreground active:scale-95"
+              }`}
               onClick={() => setUnits("kg")}
             >
               kg
-            </Button>
-            <Button
+            </button>
+            <button
               type="button"
-              variant={units === "lb" ? "default" : "outline"}
-              className="flex-1"
+              className={`flex-1 py-2 px-4 rounded-full text-sm font-bold transition-all duration-250 ${
+                units === "lb" ? "bg-primary text-primary-foreground shadow-neu-extruded" : "text-muted-foreground active:scale-95"
+              }`}
               onClick={() => setUnits("lb")}
             >
               lb
-            </Button>
+            </button>
           </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="height">Height (cm)</Label>
+        <div className="space-y-3">
+          <Label htmlFor="height" className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Height (cm)</Label>
           <Input
             id="height"
             type="number"
@@ -121,10 +125,11 @@ export default function OnboardingPage() {
             onChange={(e) => setHeight(e.target.value)}
             min={100}
             max={250}
+            className="h-12"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="bodyweight">Bodyweight ({units})</Label>
+        <div className="space-y-3">
+          <Label htmlFor="bodyweight" className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Bodyweight ({units})</Label>
           <Input
             id="bodyweight"
             type="number"
@@ -134,10 +139,11 @@ export default function OnboardingPage() {
             onChange={(e) => setBodyweight(e.target.value)}
             min={30}
             max={300}
+            className="h-12"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="restTimer">Rest timer (seconds)</Label>
+        <div className="space-y-3">
+          <Label htmlFor="restTimer" className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Rest timer (seconds)</Label>
           <Input
             id="restTimer"
             type="number"
@@ -146,14 +152,17 @@ export default function OnboardingPage() {
             onChange={(e) => setRestTimer(e.target.value)}
             min={30}
             max={300}
+            className="h-12"
           />
         </div>
         {error && (
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="text-sm text-destructive font-medium px-1">{error}</p>
         )}
-        <Button type="submit" className="w-full" size="lg" disabled={loading}>
-          {loading ? "Saving..." : "Continue"}
-        </Button>
+        <div className="pt-4">
+          <Button type="submit" className="w-full rounded-full h-14 text-base font-bold shadow-neu-extruded active:shadow-neu-pressed transition-all" disabled={loading}>
+            {loading ? "Saving..." : "Continue"}
+          </Button>
+        </div>
       </form>
     </div>
   );

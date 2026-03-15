@@ -86,7 +86,7 @@ export async function createTemplate(
 
 export async function updateTemplate(
   templateId: string,
-  data: Partial<Pick<WorkoutTemplate, "name" | "description">>
+  data: Partial<Pick<WorkoutTemplate, "name" | "description" | "scheduled_days">>
 ): Promise<void> {
   const supabase = await createClient();
   const { error } = await supabase

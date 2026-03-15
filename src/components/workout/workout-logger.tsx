@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Plus, Minus, Flag, Square } from "lucide-react";
+import { Check, Plus, Minus, Flag, Square, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RestTimer } from "./rest-timer";
@@ -108,189 +108,233 @@ export function WorkoutLogger({
 
   if (templateExercises.length === 0) {
     return (
-      <div className="p-4">
-        <p className="text-muted-foreground">No exercises in this workout.</p>
-        <form action={() => endWorkoutAction(workout.id)}>
-          <Button type="submit" variant="outline" className="mt-4">
-            End Workout
-          </Button>
-        </form>
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 max-w-lg mx-auto">
+        <div className="p-8 rounded-3xl bg-card shadow-neu-extruded text-center space-y-6">
+          <p className="text-muted-foreground font-medium">No exercises in this workout.</p>
+          <p className="text-sm text-muted-foreground">Add exercises from a template or end and start a new one.</p>
+          <form action={() => endWorkoutAction(workout.id)}>
+            <Button type="submit" variant="default" className="rounded-full w-full">
+              End Workout
+            </Button>
+          </form>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pb-32">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border p-4">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen pb-32 flex flex-col items-center">
+      {/* Top Header & Progress */}
+      <div className="sticky top-0 z-10 w-full max-w-lg bg-background/80 backdrop-blur-md p-4">
+        <div className="flex items-center justify-between p-4 rounded-3xl bg-card shadow-neu-extruded">
           <div>
-            <h1 className="font-bold">{workout.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              {formatElapsed(elapsed)} elapsed
+            <h1 className="font-bold text-sm uppercase tracking-wider text-primary truncate max-w-[150px]">{workout.name}</h1>
+            <p className="text-2xl font-bold tracking-tight mt-1">
+              {formatElapsed(elapsed)}
             </p>
           </div>
-          <form action={() => endWorkoutAction(workout.id)}>
-            <Button type="submit" variant="outline" size="sm">
-              <Square className="h-4 w-4 mr-1" />
-              End
-            </Button>
-          </form>
+          <div className="flex items-center gap-3">
+            {/* Simple circular progress indicator */}
+            <div className="relative w-12 h-12 flex items-center justify-center rounded-full shadow-neu-inset bg-card">
+              <span className="text-xs font-bold text-muted-foreground">{sets.length}</span>
+              <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+                <circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" strokeWidth="3" className="text-border/30" />
+                <circle 
+                  cx="24" cy="24" r="20" fill="none" stroke="currentColor" strokeWidth="3"
+                  className="text-primary drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)]"
+                  strokeDasharray="125.6"
+                  strokeDashoffset={Math.max(0, 125.6 - (125.6 * (sets.length / Math.max(1, templateExercises.reduce((acc, te) => acc + te.target_sets, 0)))))}
+                  style={{ transition: "stroke-dashoffset 0.5s ease" }}
+                />
+              </svg>
+            </div>
+            
+            <form action={() => endWorkoutAction(workout.id)}>
+              <Button type="submit" variant="ghost" size="icon" className="h-12 w-12 rounded-full shadow-neu-extruded text-destructive hover:text-destructive active:shadow-neu-pressed">
+                <Square className="h-5 w-5" />
+              </Button>
+            </form>
+          </div>
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
-        <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="w-full max-w-lg p-4 space-y-6 flex-1 flex flex-col">
+        {/* Exercise Nav Pills */}
+        <div className="flex gap-3 overflow-x-auto pb-4 px-1 -mx-1 snap-x">
           {templateExercises.map((te, i) => {
             const completed = sets.filter((s) => s.exercise_id === te.exercise_id).length >= te.target_sets;
+            const isActive = i === currentExerciseIndex;
             return (
               <button
                 key={te.id}
                 type="button"
                 onClick={() => setCurrentExerciseIndex(i)}
-                className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  i === currentExerciseIndex
-                    ? "bg-primary text-primary-foreground"
+                className={`snap-center flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-250 ${
+                  isActive
+                    ? "text-primary shadow-neu-pressed bg-background/50"
                     : completed
-                    ? "bg-muted text-muted-foreground"
-                    : "bg-muted/50 hover:bg-muted"
+                    ? "text-muted-foreground shadow-neu-inset bg-card opacity-60"
+                    : "text-foreground shadow-neu-extruded bg-card active:scale-95 active:shadow-neu-pressed"
                 }`}
               >
-                {te.exercise.name.slice(0, 12)}...
+                {te.exercise.name.slice(0, 15)}{te.exercise.name.length > 15 ? '...' : ''}
               </button>
             );
           })}
         </div>
 
         {currentExercise && (
-          <Card>
-            <CardContent className="p-4 space-y-4">
-              <div>
-                <h2 className="font-bold text-lg">{currentExercise.exercise.name}</h2>
-                <p className="text-sm text-muted-foreground">
-                  Target: {currentExercise.target_sets} set(s) ×{" "}
-                  {currentExercise.target_reps_min ?? "?"}–
-                  {currentExercise.target_reps_max ?? "?"} reps
-                  {currentExercise.is_warmup && " (warmup)"}
+          <div className="space-y-6 flex-1 flex flex-col">
+            <div className="text-center space-y-1">
+              <h2 className="font-bold text-2xl tracking-tight">{currentExercise.exercise.name}</h2>
+              <p className="text-sm text-primary font-medium tracking-wide">
+                TARGET: {currentExercise.target_sets} SETS
+                {currentExercise.target_reps_min ? ` × ${currentExercise.target_reps_min}-${currentExercise.target_reps_max} REPS` : ""}
+              </p>
+              {history[0] && (
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-2">
+                  Last Session: {history[0].sets.filter((s) => !s.is_warmup).map((s) => `${s.weight_kg}kg × ${s.reps}`).join(", ")}
                 </p>
-                {history[0] && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Last: {history[0].sets.filter((s) => !s.is_warmup).map((s) => `${s.weight_kg}kg × ${s.reps}`).join(", ")}
-                  </p>
-                )}
-              </div>
+              )}
+            </div>
 
-              <div className="flex flex-wrap gap-2">
+            {/* Set History (Playlist Style) */}
+            <div className="space-y-3 mt-4">
+              <AnimatePresence initial={false}>
                 {exerciseSets.map((s, i) => (
                   <motion.div
                     key={s.id}
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/20 text-primary"
+                    initial={{ opacity: 0, height: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, height: "auto", scale: 1 }}
+                    className="flex justify-between items-center p-4 rounded-2xl shadow-neu-inset bg-card"
                   >
-                    <Check className="h-3 w-3" />
-                    <span className="text-sm font-medium">
-                      {s.weight_kg}kg × {s.reps}
-                    </span>
+                    <div className="flex items-center gap-4">
+                      <div className="h-8 w-8 rounded-full shadow-neu-extruded flex items-center justify-center text-primary text-xs font-bold">
+                        {i + 1}
+                      </div>
+                      <span className="font-bold text-lg">{s.weight_kg} kg <span className="text-muted-foreground text-sm font-normal mx-1">×</span> {s.reps}</span>
+                    </div>
+                    <Check className="h-5 w-5 text-primary drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)]" />
                   </motion.div>
                 ))}
-              </div>
+              </AnimatePresence>
+            </div>
 
-              {nextSetIndex < targetSets && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
+            {/* Input Controls */}
+            {nextSetIndex < targetSets && (
+              <div className="p-6 rounded-3xl shadow-neu-extruded bg-card mt-auto space-y-8">
+                <div className="flex items-center justify-between px-2">
+                  <div className="flex flex-col items-center gap-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Weight (kg)</span>
+                    <div className="flex items-center gap-4">
                       <Button
                         type="button"
                         size="icon"
-                        variant="outline"
+                        variant="ghost"
+                        className="rounded-full h-12 w-12 shadow-neu-extruded active:shadow-neu-pressed"
                         onClick={() => setWeight((w) => Math.max(0, w - 2.5))}
                       >
-                        <Minus className="h-4 w-4" />
+                        <Minus className="h-5 w-5" />
                       </Button>
-                      <span className="min-w-[4rem] text-center font-bold text-xl">
-                        {weight} kg
-                      </span>
+                      <div className="w-16 h-16 flex items-center justify-center rounded-full shadow-neu-inset bg-card">
+                        <span className="font-bold text-xl">{weight}</span>
+                      </div>
                       <Button
                         type="button"
                         size="icon"
-                        variant="outline"
+                        variant="ghost"
+                        className="rounded-full h-12 w-12 shadow-neu-extruded active:shadow-neu-pressed text-primary"
                         onClick={() => setWeight((w) => w + 2.5)}
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-5 w-5" />
                       </Button>
                     </div>
-                    <div className="flex items-center gap-2">
+                  </div>
+
+                  <div className="w-px h-24 bg-border/50 shadow-neu-inset rounded-full mx-2" />
+
+                  <div className="flex flex-col items-center gap-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Reps</span>
+                    <div className="flex items-center gap-4">
                       <Button
                         type="button"
                         size="icon"
-                        variant="outline"
+                        variant="ghost"
+                        className="rounded-full h-12 w-12 shadow-neu-extruded active:shadow-neu-pressed"
                         onClick={() => setReps((r) => Math.max(1, r - 1))}
                       >
-                        <Minus className="h-4 w-4" />
+                        <Minus className="h-5 w-5" />
                       </Button>
-                      <span className="min-w-[2rem] text-center font-bold">
-                        {reps} reps
-                      </span>
+                      <div className="w-16 h-16 flex items-center justify-center rounded-full shadow-neu-inset bg-card">
+                        <span className="font-bold text-xl">{reps}</span>
+                      </div>
                       <Button
                         type="button"
                         size="icon"
-                        variant="outline"
+                        variant="ghost"
+                        className="rounded-full h-12 w-12 shadow-neu-extruded active:shadow-neu-pressed text-primary"
                         onClick={() => setReps((r) => r + 1)}
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-5 w-5" />
                       </Button>
                     </div>
                   </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={isFailure ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setIsFailure((f) => !f)}
-                    >
-                      <Flag className="h-4 w-4 mr-1" />
-                      Failure
-                    </Button>
-                    <Button
-                      className="flex-1"
-                      size="lg"
-                      onClick={handleSaveSet}
-                      disabled={saving}
-                    >
-                      {saving ? "Saving..." : "Save set"}
-                    </Button>
-                  </div>
                 </div>
-              )}
 
-              <AnimatePresence>
-                {weightIncreased && lastSavedSet?.exerciseId === currentExercise.exercise_id && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="text-sm text-primary font-medium flex items-center gap-1"
+                <div className="flex items-center gap-4 pt-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className={`rounded-full h-14 px-6 flex-shrink-0 transition-all duration-200 ${
+                      isFailure 
+                        ? "shadow-neu-pressed text-destructive bg-background/50" 
+                        : "shadow-neu-extruded text-muted-foreground"
+                    }`}
+                    onClick={() => setIsFailure((f) => !f)}
                   >
-                    <Plus className="h-4 w-4" />
-                    Weight increased!
-                  </motion.p>
-                )}
-              </AnimatePresence>
-            </CardContent>
-          </Card>
+                    <Flag className="h-4 w-4 mr-2" />
+                    Failure
+                  </Button>
+                  
+                  <Button
+                    className="flex-1 rounded-full h-14 text-lg font-bold shadow-[0_0_15px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] active:scale-[0.98] transition-all"
+                    onClick={handleSaveSet}
+                    disabled={saving}
+                  >
+                    {saving ? "Saving..." : "Log Set"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <AnimatePresence>
+              {weightIncreased && lastSavedSet?.exerciseId === currentExercise.exercise_id && (
+                <motion.p
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="text-sm text-primary font-bold tracking-wide flex items-center justify-center gap-2 mt-4"
+                >
+                  <Trophy className="h-4 w-4" />
+                  Personal Best!
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-4 pt-4">
           <Button
-            variant="outline"
+            variant="ghost"
+            className="flex-1 rounded-full h-12 shadow-neu-extruded active:shadow-neu-pressed disabled:opacity-30 disabled:shadow-neu-extruded"
             disabled={currentExerciseIndex === 0}
             onClick={() => setCurrentExerciseIndex((i) => Math.max(0, i - 1))}
           >
             Previous
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
+            className="flex-1 rounded-full h-12 shadow-neu-extruded active:shadow-neu-pressed text-primary disabled:opacity-30 disabled:shadow-neu-extruded disabled:text-muted-foreground"
             disabled={currentExerciseIndex >= templateExercises.length - 1}
             onClick={() =>
               setCurrentExerciseIndex((i) =>

@@ -64,88 +64,86 @@ export function ProgressClient({
   }, [selectedExerciseId]);
 
   return (
-    <div className="p-4 space-y-6 max-w-lg mx-auto">
-      <h1 className="text-xl font-bold">Progress</h1>
+    <div className="p-4 space-y-6 max-w-lg mx-auto pb-32">
+      <div className="text-center space-y-1 mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Progress</h1>
+        <p className="text-muted-foreground text-xs uppercase tracking-wider">Track your analytics</p>
+      </div>
 
       {!weekStats.hasEnoughData ? (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Card>
-            <CardContent className="p-6 text-center">
-              <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-              <h2 className="font-semibold mb-2">
-                Collecting data this week…
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Log at least 5 workouts or train for 7 days to unlock charts and
-                analytics.
-              </p>
-              <div className="space-y-2 text-left">
-                <p className="text-sm">
-                  <span className="font-medium">Workouts this week:</span>{" "}
-                  {weekStats.workoutsThisWeek}
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium">Volume this week:</span>{" "}
-                  {Math.round(weekStats.volumeThisWeek)} kg
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium">Total workouts:</span>{" "}
-                  {weekStats.totalWorkouts}
-                </p>
+          <div className="p-8 rounded-3xl bg-card shadow-neu-extruded text-center">
+            <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center rounded-full shadow-neu-inset bg-card">
+              <BarChart3 className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h2 className="font-bold text-lg mb-2 text-foreground">
+              Collecting data...
+            </h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              Log at least 5 workouts or train for 7 days to unlock charts and analytics.
+            </p>
+            <div className="space-y-3 text-left bg-background/50 p-5 rounded-2xl shadow-neu-inset">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">This week</span>
+                <span className="font-bold text-primary">{weekStats.workoutsThisWeek} workouts</span>
               </div>
-            </CardContent>
-          </Card>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Volume</span>
+                <span className="font-bold text-primary">{Math.round(weekStats.volumeThisWeek)} kg</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total logged</span>
+                <span className="font-bold text-primary">{weekStats.totalWorkouts}</span>
+              </div>
+            </div>
+          </div>
         </motion.div>
       ) : (
-        <>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                This week
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Workouts</span>
-                <span className="font-bold">{weekStats.workoutsThisWeek}</span>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              This week
+            </h2>
+            <div className="p-6 rounded-3xl bg-card shadow-neu-extruded space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-2xl shadow-neu-inset bg-card">
+                <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Workouts</span>
+                <span className="font-bold text-xl text-primary">{weekStats.workoutsThisWeek}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Volume</span>
-                <span className="font-bold">
-                  {Math.round(weekStats.volumeThisWeek)} kg
-                </span>
+              <div className="flex items-center justify-between p-4 rounded-2xl shadow-neu-inset bg-card">
+                <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Volume</span>
+                <span className="font-bold text-xl text-primary">{Math.round(weekStats.volumeThisWeek)} kg</span>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Volume per week</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <VolumeChart data={volumeByWeek} />
-            </CardContent>
-          </Card>
+          <div className="space-y-2">
+            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2">Volume per week</h2>
+            <div className="p-4 rounded-3xl bg-card shadow-neu-extruded">
+              <div className="p-2 rounded-2xl shadow-neu-inset bg-background/50">
+                <VolumeChart data={volumeByWeek} />
+              </div>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Workouts per week</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <WorkoutsChart data={workoutsPerWeek} />
-            </CardContent>
-          </Card>
+          <div className="space-y-2">
+            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2">Workouts per week</h2>
+            <div className="p-4 rounded-3xl bg-card shadow-neu-extruded">
+              <div className="p-2 rounded-2xl shadow-neu-inset bg-background/50">
+                <WorkoutsChart data={workoutsPerWeek} />
+              </div>
+            </div>
+          </div>
 
           {exercises.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Exercise progression</CardTitle>
+            <div className="space-y-2">
+              <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2">Exercise progression</h2>
+              <div className="p-5 rounded-3xl bg-card shadow-neu-extruded space-y-4">
                 <select
-                  className="mt-2 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                  className="w-full rounded-full border-none shadow-neu-inset bg-card px-5 py-3 text-sm font-medium focus:ring-2 focus:ring-primary appearance-none outline-none"
                   value={selectedExerciseId ?? ""}
                   onChange={(e) =>
                     setSelectedExerciseId(
@@ -159,30 +157,30 @@ export function ProgressClient({
                     </option>
                   ))}
                 </select>
-              </CardHeader>
-              <CardContent>
-                <ExerciseProgressionChart
-                  data={exerciseProgression}
-                  exerciseName={
-                    exercises.find((e) => e.id === selectedExerciseId)?.name ??
-                    ""
-                  }
-                />
-              </CardContent>
-            </Card>
+                <div className="p-2 rounded-2xl shadow-neu-inset bg-background/50">
+                  <ExerciseProgressionChart
+                    data={exerciseProgression}
+                    exerciseName={
+                      exercises.find((e) => e.id === selectedExerciseId)?.name ??
+                      ""
+                    }
+                  />
+                </div>
+              </div>
+            </div>
           )}
 
           {measurements.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Bodyweight</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BodyweightChart data={measurements} />
-              </CardContent>
-            </Card>
+            <div className="space-y-2">
+              <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2">Bodyweight</h2>
+              <div className="p-4 rounded-3xl bg-card shadow-neu-extruded">
+                <div className="p-2 rounded-2xl shadow-neu-inset bg-background/50">
+                  <BodyweightChart data={measurements} />
+                </div>
+              </div>
+            </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

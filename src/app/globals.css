@@ -4,20 +4,28 @@
 
 @layer base {
   :root {
-    --background: 240 10% 3%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 5%;
-    --card-foreground: 0 0% 98%;
-    --primary: 142 76% 46%;
+    --background: 240 5% 12%;
+    --foreground: 0 0% 95%;
+    --card: 240 5% 14%;
+    --card-foreground: 0 0% 95%;
+    
+    --primary: 24 100% 55%;
     --primary-foreground: 0 0% 100%;
-    --accent: 187 85% 53%;
-    --accent-foreground: 240 10% 3%;
-    --muted: 240 10% 10%;
+    
+    --accent: 240 5% 18%;
+    --accent-foreground: 0 0% 95%;
+    
+    --muted: 240 5% 10%;
     --muted-foreground: 240 5% 65%;
+    
     --destructive: 0 84% 60%;
-    --border: 240 10% 14%;
-    --input: 240 10% 12%;
-    --ring: 142 76% 46%;
+    
+    --border: 240 5% 10%;
+    --input: 240 5% 10%;
+    --ring: 24 100% 55%;
+    
+    --neu-light: 240 5% 20%;
+    --neu-dark: 240 5% 6%;
   }
 }
 
@@ -27,12 +35,29 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    background-color: #050509;
   }
 }
 
 @layer utilities {
+  .shadow-neu-extruded {
+    box-shadow: 
+      -5px -5px 10px -2px hsl(var(--neu-light) / 0.6),
+      5px 5px 10px -2px hsl(var(--neu-dark) / 0.9);
+  }
+  .shadow-neu-pressed {
+    box-shadow: 
+      inset -4px -4px 8px -2px hsl(var(--neu-light) / 0.6),
+      inset 4px 4px 8px -2px hsl(var(--neu-dark) / 0.9);
+  }
+  .shadow-neu-inset {
+    box-shadow: 
+      inset 3px 3px 6px -1px hsl(var(--neu-dark) / 0.9),
+      inset -3px -3px 6px -1px hsl(var(--neu-light) / 0.4);
+  }
   .text-glow {
     text-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+  }
+  .glow-primary {
+    box-shadow: 0 0 15px 2px hsl(var(--primary) / 0.4);
   }
 }

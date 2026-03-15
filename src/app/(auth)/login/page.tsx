@@ -36,15 +36,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-primary">Gym Tracker</h1>
-        <p className="text-muted-foreground mt-1">Sign in to your account</p>
+    <div className="w-full max-w-sm space-y-8 mt-[-10vh]">
+      <div className="text-center space-y-2">
+        <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center rounded-full shadow-neu-extruded bg-card">
+          <div className="w-14 h-14 rounded-full shadow-neu-inset flex items-center justify-center">
+            <div className="w-6 h-6 rounded-full bg-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]" />
+          </div>
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Gym Tracker</h1>
+        <p className="text-muted-foreground uppercase tracking-wider text-xs font-medium">Sign in to your account</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+      <form onSubmit={handleSubmit} className="space-y-5 p-6 rounded-3xl shadow-neu-extruded bg-card">
+        <div className="space-y-3">
+          <Label htmlFor="email" className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Email</Label>
           <Input
             id="email"
             type="email"
@@ -53,31 +58,35 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
+            className="h-12"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+        <div className="space-y-3">
+          <Label htmlFor="password" className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Password</Label>
           <PasswordInput
             id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="current-password"
+            className="h-12"
           />
         </div>
         {error && (
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="text-sm text-destructive font-medium px-1">{error}</p>
         )}
-        <Button type="submit" className="w-full" size="lg" disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Signing in...
-            </>
-          ) : (
-            "Sign in"
-          )}
-        </Button>
+        <div className="pt-2">
+          <Button type="submit" className="w-full rounded-full h-14 text-base font-bold shadow-[0_0_15px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] active:scale-[0.98] transition-all" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                Signing in...
+              </>
+            ) : (
+              "Sign in"
+            )}
+          </Button>
+        </div>
       </form>
 
       <p className="text-center text-sm text-muted-foreground">

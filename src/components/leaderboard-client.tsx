@@ -39,29 +39,34 @@ export function LeaderboardClient({
   const rows = metric === "consistency" ? consistency : volume;
 
   return (
-    <div className="p-4 space-y-6 max-w-lg mx-auto">
-      <h1 className="text-xl font-bold">Leaderboard</h1>
+    <div className="p-4 space-y-6 max-w-lg mx-auto pb-32">
+      <div className="text-center space-y-1 mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Leaderboard</h1>
+        <p className="text-muted-foreground text-xs uppercase tracking-wider">Compete with the community</p>
+      </div>
 
       {myRank && (
         <motion.div
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Card className="border-primary/30">
-            <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">Your rank</p>
-              <p className="text-2xl font-bold text-primary">#{myRank}</p>
-            </CardContent>
-          </Card>
+          <div className="p-6 rounded-3xl bg-card shadow-neu-inset text-center relative overflow-hidden">
+            <div className="absolute inset-0 border border-primary/20 rounded-3xl" />
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Your Rank</p>
+            <p className="text-4xl font-bold text-primary text-glow flex items-center justify-center gap-2">
+              <Trophy className="h-8 w-8" />
+              #{myRank}
+            </p>
+          </div>
         </motion.div>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex rounded-full shadow-neu-inset bg-card p-1">
         <button
           type="button"
           onClick={() => setPeriod("7d")}
-          className={`flex-1 py-2 rounded-lg text-sm font-medium ${
-            period === "7d" ? "bg-primary text-primary-foreground" : "bg-muted"
+          className={`flex-1 py-2 rounded-full text-sm font-bold transition-all duration-250 ${
+            period === "7d" ? "bg-primary text-primary-foreground shadow-neu-extruded" : "text-muted-foreground active:scale-95"
           }`}
         >
           7 days
@@ -69,22 +74,22 @@ export function LeaderboardClient({
         <button
           type="button"
           onClick={() => setPeriod("30d")}
-          className={`flex-1 py-2 rounded-lg text-sm font-medium ${
-            period === "30d" ? "bg-primary text-primary-foreground" : "bg-muted"
+          className={`flex-1 py-2 rounded-full text-sm font-bold transition-all duration-250 ${
+            period === "30d" ? "bg-primary text-primary-foreground shadow-neu-extruded" : "text-muted-foreground active:scale-95"
           }`}
         >
           30 days
         </button>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex rounded-full shadow-neu-inset bg-card p-1">
         <button
           type="button"
           onClick={() => setMetric("consistency")}
-          className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1 ${
+          className={`flex-1 py-2 rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all duration-250 ${
             metric === "consistency"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted"
+              ? "bg-primary text-primary-foreground shadow-neu-extruded"
+              : "text-muted-foreground active:scale-95"
           }`}
         >
           <Flame className="h-4 w-4" />
@@ -93,10 +98,10 @@ export function LeaderboardClient({
         <button
           type="button"
           onClick={() => setMetric("volume")}
-          className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1 ${
+          className={`flex-1 py-2 rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all duration-250 ${
             metric === "volume"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted"
+              ? "bg-primary text-primary-foreground shadow-neu-extruded"
+              : "text-muted-foreground active:scale-95"
           }`}
         >
           <Trophy className="h-4 w-4" />
@@ -104,39 +109,38 @@ export function LeaderboardClient({
         </button>
       </div>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">
-            {metric === "consistency" ? "Workouts" : "Total volume"} ({period})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 max-h-80 overflow-y-auto">
-            {rows.map((row) => (
-              <div
-                key={row.user_id}
-                className={`flex justify-between items-center py-3 px-3 rounded-lg ${
-                  row.user_id === currentUserId ? "bg-primary/20" : ""
-                }`}
-              >
-                <span className="font-medium">
-                  #{row.rank} {row.display_name || row.username}
-                </span>
-                <span className="text-muted-foreground">
-                  {metric === "consistency"
-                    ? `${row.workouts_count} workouts`
-                    : `${Math.round(row.total_volume_kg)} kg`}
-                </span>
-              </div>
-            ))}
-            {rows.length === 0 && (
-              <p className="text-sm text-muted-foreground py-8 text-center">
-                No data yet. Complete workouts to appear on the leaderboard.
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-2 pt-2">
+        <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2">
+          {metric === "consistency" ? "Top Workouts" : "Top Volume"} ({period})
+        </h2>
+        <div className="p-4 rounded-3xl bg-card shadow-neu-extruded space-y-3">
+          {rows.map((row) => (
+            <div
+              key={row.user_id}
+              className={`flex justify-between items-center p-4 rounded-2xl transition-all ${
+                row.user_id === currentUserId 
+                  ? "shadow-neu-extruded bg-background/50 border border-primary/20" 
+                  : "shadow-neu-inset bg-card"
+              }`}
+            >
+              <span className="font-bold text-base flex items-center gap-3">
+                <span className="text-primary text-lg w-6">#{row.rank}</span>
+                {row.display_name || row.username}
+              </span>
+              <span className="text-sm font-medium text-muted-foreground">
+                {metric === "consistency"
+                  ? `${row.workouts_count} workouts`
+                  : `${Math.round(row.total_volume_kg)} kg`}
+              </span>
+            </div>
+          ))}
+          {rows.length === 0 && (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              No data yet. Complete workouts to appear on the leaderboard.
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

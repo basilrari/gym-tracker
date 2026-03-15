@@ -28,12 +28,15 @@ export type Exercise = {
   created_at: string;
 };
 
+/** Day of week: 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 7=Sun. Empty = any day. */
 export type WorkoutTemplate = {
   id: string;
   user_id: string | null;
   name: string;
   description: string | null;
   is_public: boolean;
+  /** 1=Mon .. 7=Sun; empty = no specific days */
+  scheduled_days?: number[];
   created_at: string;
 };
 

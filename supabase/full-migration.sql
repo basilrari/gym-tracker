@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS workout_templates (
   name TEXT NOT NULL,
   description TEXT,
   is_public BOOLEAN DEFAULT false,
+  scheduled_days INTEGER[] DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -287,3 +288,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Add scheduled_days if table was created before this column existed (1=Mon .. 7=Sun)
+ALTER TABLE workout_templates ADD COLUMN IF NOT EXISTS scheduled_days INTEGER[] DEFAULT '{}';

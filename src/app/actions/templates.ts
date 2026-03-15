@@ -1,11 +1,23 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import {
+  updateTemplate,
   updateTemplateExercise,
   removeTemplateExercise,
   addTemplateExercise,
   reorderTemplateExercises,
 } from "@/lib/db/templates";
+
+export async function updateTemplateAction(
+  templateId: string,
+  data: { name?: string; description?: string; scheduled_days?: number[] }
+) {
+  await updateTemplate(templateId, data);
+  revalidatePath("/");
+  revalidatePath("/templates");
+  revalidatePath(`/templates/${templateId}`);
+}
 
 export async function updateTemplateExerciseAction(
   templateExerciseId: string,

@@ -22,8 +22,8 @@ export function AppNav() {
   if (isWorkoutPage) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card">
-      <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
+    <nav className="fixed bottom-6 left-4 right-4 z-50 max-w-md mx-auto bg-card shadow-neu-extruded rounded-[2rem] p-2">
+      <div className="flex justify-around items-center">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -33,14 +33,14 @@ export function AppNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 px-4 py-2 min-w-[64px] rounded-lg transition-colors",
+                "flex flex-col items-center justify-center gap-1 px-4 py-2 min-w-[64px] rounded-full transition-all duration-250",
                 isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "text-primary shadow-neu-pressed bg-background/50"
+                  : "text-muted-foreground hover:text-foreground active:scale-95 active:shadow-neu-pressed"
               )}
             >
-              <item.icon className="h-5 w-5" />
-              <span className="text-xs font-medium">{item.label}</span>
+              <item.icon className={cn("h-5 w-5", isActive && "drop-shadow-[0_0_8px_rgba(255,100,0,0.5)]")} />
+              <span className="text-[10px] font-medium leading-none mt-1">{item.label}</span>
             </Link>
           );
         })}

@@ -16,6 +16,11 @@ if (!DATABASE_URL) {
   console.error("DATABASE_URL not set in .env.local");
   process.exit(1);
 }
+// Direct db.* host often doesn't resolve from local networks — use Session pooler (port 6543) instead
+if (DATABASE_URL.includes("db.") && DATABASE_URL.includes("supabase.co") && !DATABASE_URL.includes("pooler")) {
+  console.warn("Warning: DATABASE_URL looks like the direct DB host. If you get ENOTFOUND, use the Session pooler URI instead:");
+  console.warn("  Supabase Dashboard → Project Settings → Database → Connection string → URI (Session pooler, port 6543)");
+}
 
 const migrationsDir = path.join(__dirname, "../supabase/migrations");
 const files = fs.readdirSync(migrationsDir).sort();
@@ -49,6 +54,17 @@ async function run() {
 }
 
 run().catch((err) => {
-  console.error(err);
+  if (err.code === "ENOTFOUND" && err.hostname && err.hostname.startsWith("db.")) {
+    console.error("Cannot reach database host:", err.hostname);
+    console.error("");
+    console.error("Use the Session pooler URL instead of the direct DB URL:");
+    console.error("  1. Supabase Dashboard → Project Settings → Database");
+    console.error("  2. Connection string → URI → choose 'Session pooler' (port 6543)");
+    console.error("  3. Put that URI in .env.local as DATABASE_URL=...");
+    console.error("");
+    console.error("Or run the SQL manually: SQL Editor → paste supabase/full-migration.sql → Run");
+  } else {
+    console.error(err);
+  }
   process.exit(1);
 });
