@@ -2,6 +2,15 @@
 
 Mobile-first workout logging web app for the gym. Built with Next.js App Router, TypeScript, Supabase (Postgres + Auth), and deployed to Vercel.
 
+## Features
+
+- **Workouts**: Start from a routine or empty; log sets with weight and reps (manual entry or +/-); end or discard with confirmation; rest timer.
+- **Routines (templates)**: Create and edit routines; add/remove exercises; set scheduled days; start a workout from a routine.
+- **History**: View past workouts (7d / 30d / all); edit workout name; delete workout; save a workout as a new routine or add it to an existing one.
+- **Progress**: Weekly stats, volume and workout trends, exercise progression.
+- **Leaderboard**: Consistency and volume rankings (7d / 30d).
+- **Profile**: Onboarding, rest timer, units.
+
 ## Tech Stack
 
 - **Frontend**: Next.js 15, App Router, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion, Recharts
