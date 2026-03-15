@@ -25,7 +25,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-4. Run the Supabase migrations (see `supabase/migrations/`) in your Supabase project.
+4. Run the database migration: Open Supabase Dashboard → SQL Editor, then run the contents of `supabase/full-migration.sql`. See `MIGRATION_INSTRUCTIONS.md` for details.
 
 5. Start the dev server:
 

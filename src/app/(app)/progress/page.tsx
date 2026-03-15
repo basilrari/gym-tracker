@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/db/profiles";
 import {
@@ -13,7 +14,7 @@ import { ProgressClient } from "@/components/progress-client";
 export default async function ProgressPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) redirect("/login");
 
   const [profile, weekStats, volumeByWeek, workoutsPerWeek, exercises, measurements] =
     await Promise.all([

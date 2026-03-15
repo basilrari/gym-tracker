@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/db/profiles";
 import { getTemplatesForUser } from "@/lib/db/templates";
@@ -9,7 +10,7 @@ import { HomeClient } from "@/components/home-client";
 export default async function HomePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) redirect("/login");
 
   const [profile, templates, weekStats, streak, leaderboardConsistency, leaderboardVolume, myRank] =
     await Promise.all([
