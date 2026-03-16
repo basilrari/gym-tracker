@@ -22,27 +22,32 @@ import {
 export async function updateTemplateAction(
   templateId: string,
   data: { name?: string; description?: string | null; scheduled_days?: number[] }
-): Promise<{ redirectTo?: string }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+): Promise<{ redirectTo?: string; error?: string }> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
 
-  const template = await getTemplate(templateId);
-  if (!template) throw new Error("Template not found");
+    const template = await getTemplate(templateId);
+    if (!template) return { error: "Template not found" };
 
-  if (template.user_id === null) {
-    const { newId } = await forkTemplate(templateId, user.id, data);
+    if (template.user_id === null) {
+      const { newId } = await forkTemplate(templateId, user.id, data);
+      revalidatePath("/");
+      revalidatePath("/templates");
+      revalidatePath(`/templates/${newId}`);
+      return { redirectTo: `/templates/${newId}` };
+    }
+
+    await updateTemplate(templateId, data);
     revalidatePath("/");
     revalidatePath("/templates");
-    revalidatePath(`/templates/${newId}`);
-    return { redirectTo: `/templates/${newId}` };
+    revalidatePath(`/templates/${templateId}`);
+    return {};
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { error: msg?.trim() || "Could not save. Try again." };
   }
-
-  await updateTemplate(templateId, data);
-  revalidatePath("/");
-  revalidatePath("/templates");
-  revalidatePath(`/templates/${templateId}`);
-  return {};
 }
 
 export async function updateTemplateExerciseAction(
@@ -146,8 +151,13 @@ export async function reorderTemplateExercisesAction(
     revalidatePath(`/templates/${templateId}`);
     return {};
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Could not save order.";
-    return { error: message };
+    const raw = err instanceof Error ? err.message : String(err);
+    const message = raw?.trim() || "Could not save order.";
+    const friendly =
+      message.includes("Duplicate") || message.includes("Could not save exercise order")
+        ? "Cannot reorder this routine. Duplicate it first: edit the routine name and save, then reorder."
+        : message;
+    return { error: friendly };
   }
 }
 
@@ -155,42 +165,47 @@ export async function addTemplateExerciseSetAction(
   templateExerciseId: string,
   setIndex: number,
   options?: { repsMin?: number | null; repsMax?: number | null; weightKg?: number | null; tag?: string }
-): Promise<{ redirectTo?: string }> {
-  const supabase = await createClient();
-  const { data: row } = await supabase
-    .from("template_exercises")
-    .select("template_id")
-    .eq("id", templateExerciseId)
-    .single();
+): Promise<{ redirectTo?: string; error?: string }> {
+  try {
+    const supabase = await createClient();
+    const { data: row } = await supabase
+      .from("template_exercises")
+      .select("template_id")
+      .eq("id", templateExerciseId)
+      .single();
 
-  const templateId = row?.template_id as string | undefined;
-  const template = templateId ? await getTemplate(templateId) : null;
+    const templateId = row?.template_id as string | undefined;
+    const template = templateId ? await getTemplate(templateId) : null;
 
-  if (template?.user_id === null) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
-    const { newId, oldTeIdToNewTeId } = await forkTemplate(templateId!, user.id);
-    const newTeId = oldTeIdToNewTeId[templateExerciseId];
-    if (newTeId) {
-      await addTemplateExerciseSet(newTeId, setIndex, options?.repsMin, options?.repsMax, options?.weightKg, options?.tag ?? "warmup");
+    if (template?.user_id === null) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { error: "Unauthorized" };
+      const { newId, oldTeIdToNewTeId } = await forkTemplate(templateId!, user.id);
+      const newTeId = oldTeIdToNewTeId[templateExerciseId];
+      if (newTeId) {
+        await addTemplateExerciseSet(newTeId, setIndex, options?.repsMin, options?.repsMax, options?.weightKg, options?.tag ?? "warmup");
+      }
+      revalidatePath("/");
+      revalidatePath("/templates");
+      revalidatePath(`/templates/${newId}`);
+      return { redirectTo: `/templates/${newId}` };
     }
-    revalidatePath("/");
-    revalidatePath("/templates");
-    revalidatePath(`/templates/${newId}`);
-    return { redirectTo: `/templates/${newId}` };
-  }
 
-  await addTemplateExerciseSet(
-    templateExerciseId,
-    setIndex,
-    options?.repsMin,
-    options?.repsMax,
-    options?.weightKg,
-    options?.tag ?? "warmup"
-  );
-  revalidatePath("/templates");
-  if (templateId) revalidatePath(`/templates/${templateId}`);
-  return {};
+    await addTemplateExerciseSet(
+      templateExerciseId,
+      setIndex,
+      options?.repsMin,
+      options?.repsMax,
+      options?.weightKg,
+      options?.tag ?? "warmup"
+    );
+    revalidatePath("/templates");
+    if (templateId) revalidatePath(`/templates/${templateId}`);
+    return {};
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { error: msg?.trim() || "Could not add set. Run the database migration (template_exercise_sets) in Supabase if you haven’t." };
+  }
 }
 
 export async function updateTemplateExerciseSetAction(

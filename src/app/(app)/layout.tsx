@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/db/profiles";
 import { AppNav } from "@/components/app-nav";
-
+import { Toaster } from "sonner";
 import { PageTransition } from "@/components/page-transition";
 
 export default async function AppLayout({
@@ -28,6 +28,7 @@ export default async function AppLayout({
         <PageTransition>{children}</PageTransition>
       </main>
       <AppNav />
+      <Toaster richColors position="top-center" />
     </div>
   );
 }

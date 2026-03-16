@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Play, ChevronLeft, ChevronUp, ChevronDown, Calendar, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -81,11 +82,6 @@ export function TemplateDetailClient({
   const [addingSetForTeId, setAddingSetForTeId] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
-  const [nameSaveError, setNameSaveError] = useState<string | null>(null);
-  const [exerciseNameSaveError, setExerciseNameSaveError] = useState<string | null>(null);
-  const [reorderError, setReorderError] = useState<string | null>(null);
-  const [setSaveError, setSetSaveError] = useState<string | null>(null);
-  const [addSetError, setAddSetError] = useState<string | null>(null);
 
   async function handleStartWorkout() {
     setIsStarting(true);
@@ -102,14 +98,26 @@ export function TemplateDetailClient({
       ? scheduledDays.filter((d) => d !== day)
       : [...scheduledDays, day].sort((a, b) => a - b);
     setScheduledDays(next);
-    await updateTemplateAction(template.id, { scheduled_days: next });
+    const result = await updateTemplateAction(template.id, { scheduled_days: next });
+    if (result?.error) {
+      setScheduledDays(scheduledDays);
+      router.refresh();
+      return;
+    }
+    if (result?.redirectTo) {
+      router.push(result.redirectTo);
+      return;
+    }
   }
 
   async function saveName() {
     const name = editName.trim() || template.name;
-    setNameSaveError(null);
     try {
       const result = await updateTemplateAction(template.id, { name });
+      if (result?.error) {
+        toast.error(result.error);
+        return;
+      }
       if (result?.redirectTo) {
         router.push(result.redirectTo);
         return;
@@ -118,17 +126,28 @@ export function TemplateDetailClient({
       setEditingName(false);
       router.refresh();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not save name.";
-      setNameSaveError(message);
+      toast.error(err instanceof Error ? err.message : "Could not save name.");
     }
   }
 
   async function saveDescription() {
-    await updateTemplateAction(template.id, {
-      description: editDescription.trim() || null,
-    });
-    setEditingDesc(false);
-    router.refresh();
+    try {
+      const result = await updateTemplateAction(template.id, {
+        description: editDescription.trim() || null,
+      });
+      if (result?.error) {
+        toast.error(result.error);
+        return;
+      }
+      if (result?.redirectTo) {
+        router.push(result.redirectTo);
+        return;
+      }
+      setEditingDesc(false);
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save description.");
+    }
   }
 
   const existingExerciseIds = new Set(exercises.map((e) => e.exercise_id));
@@ -172,7 +191,6 @@ export function TemplateDetailClient({
 
   async function saveExerciseName() {
     if (!editingExerciseId) return;
-    setExerciseNameSaveError(null);
     try {
       const result = await updateTemplateExerciseAction(editingExerciseId, {
         display_name: editExerciseName.trim() || null,
@@ -191,7 +209,7 @@ export function TemplateDetailClient({
       setEditingExerciseId(null);
       router.refresh();
     } catch (err) {
-      setExerciseNameSaveError(err instanceof Error ? err.message : "Could not save name.");
+      toast.error(err instanceof Error ? err.message : "Could not save name.");
     }
   }
 
@@ -201,12 +219,10 @@ export function TemplateDetailClient({
     setEditRepsMax(set.reps_max);
     setEditWeight(set.weight_kg);
     setEditTag(set.tag || "warmup");
-    setSetSaveError(null);
   }
 
   async function saveSetEdits() {
     if (!editingSetId) return;
-    setSetSaveError(null);
     const tagToSave = (editTag || "").trim() || "warmup";
     try {
       await updateTemplateExerciseSetAction(editingSetId, {
@@ -228,7 +244,7 @@ export function TemplateDetailClient({
       setEditingSetId(null);
       router.refresh();
     } catch (err) {
-      setSetSaveError(err instanceof Error ? err.message : "Could not save set.");
+      toast.error(err instanceof Error ? err.message : "Could not save set.");
     }
   }
 
@@ -236,16 +252,19 @@ export function TemplateDetailClient({
     const te = exercises.find((e) => e.id === teId);
     if (!te) return;
     setAddingSetForTeId(teId);
-    setAddSetError(null);
     try {
       const result = await addTemplateExerciseSetAction(teId, te.sets.length, { tag: "warmup" });
+      if (result?.error) {
+        toast.error(result.error);
+        return;
+      }
       if (result?.redirectTo) {
         router.push(result.redirectTo);
         return;
       }
       router.refresh();
     } catch (err) {
-      setAddSetError(err instanceof Error ? err.message : "Could not add set.");
+      toast.error(err instanceof Error ? err.message : "Could not add set.");
     } finally {
       setAddingSetForTeId(null);
     }
@@ -272,14 +291,13 @@ export function TemplateDetailClient({
     if (swapIndex < 0 || swapIndex >= newOrder.length) return;
     [newOrder[index], newOrder[swapIndex]] = [newOrder[swapIndex], newOrder[index]];
     setExercises(newOrder);
-    setReorderError(null);
     try {
       const result = await reorderTemplateExercisesAction(
         template.id,
         newOrder.map((e) => e.id)
       );
       if (result?.error) {
-        setReorderError(result.error);
+        toast.error(result.error);
         setExercises(template.exercises);
         return;
       }
@@ -289,8 +307,8 @@ export function TemplateDetailClient({
       }
       router.refresh();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not save order.";
-      setReorderError(message);
+      const message = err instanceof Error ? err.message : String(err) || "Could not save order.";
+      toast.error(message.trim() || "Could not save order. Try duplicating the routine first (edit name and save), then reorder.");
       setExercises(template.exercises);
     }
   }
@@ -310,7 +328,7 @@ export function TemplateDetailClient({
                 <input
                   type="text"
                   value={editName}
-                  onChange={(e) => { setEditName(e.target.value); setNameSaveError(null); }}
+                  onChange={(e) => setEditName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && saveName()}
                   className="flex-1 min-w-0 px-4 py-3 rounded-2xl bg-card border border-border text-lg font-bold min-h-[48px] touch-manipulation"
                   autoFocus
@@ -319,14 +337,11 @@ export function TemplateDetailClient({
                   <Button size="sm" className="rounded-full" onClick={saveName}>
                     Save
                   </Button>
-                  <Button size="sm" variant="ghost" className="rounded-full" onClick={() => { setEditingName(false); setEditName(template.name); setNameSaveError(null); }}>
+                  <Button size="sm" variant="ghost" className="rounded-full" onClick={() => { setEditingName(false); setEditName(template.name); }}>
                     Cancel
                   </Button>
                 </div>
               </div>
-              {nameSaveError && (
-                <p className="text-sm text-destructive px-1">{nameSaveError}</p>
-              )}
             </div>
           ) : (
             <button
@@ -436,9 +451,6 @@ export function TemplateDetailClient({
             Add exercise
           </Button>
         </div>
-        {reorderError && (
-          <p className="text-sm text-destructive px-2">{reorderError}</p>
-        )}
         <div className="p-4 rounded-3xl bg-card shadow-neu-extruded space-y-4">
           {exercises.map((te, i) => (
             <motion.div
@@ -480,7 +492,7 @@ export function TemplateDetailClient({
                     <input
                       type="text"
                       value={editExerciseName}
-                      onChange={(e) => { setEditExerciseName(e.target.value); setExerciseNameSaveError(null); }}
+                      onChange={(e) => setEditExerciseName(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && saveExerciseName()}
                       className="w-full px-4 py-3 rounded-xl bg-card border border-primary/30 text-sm font-bold min-h-[48px] touch-manipulation focus:outline-none focus:ring-2 focus:ring-primary/50"
                       placeholder="Exercise name"
@@ -497,15 +509,11 @@ export function TemplateDetailClient({
                         onClick={() => {
                           setEditingExerciseId(null);
                           setEditExerciseName("");
-                          setExerciseNameSaveError(null);
                         }}
                       >
                         Cancel
                       </Button>
                     </div>
-                    {exerciseNameSaveError && (
-                      <p className="text-sm text-destructive px-1">{exerciseNameSaveError}</p>
-                    )}
                   </div>
                 ) : editingExerciseDetails === te.id ? (
                   <div className="space-y-3">
@@ -598,12 +606,9 @@ export function TemplateDetailClient({
                               <Button size="sm" className="rounded-full h-9 px-3" onClick={saveSetEdits}>
                                 Save
                               </Button>
-                              <Button size="sm" variant="ghost" className="rounded-full h-9 px-3" onClick={() => { setEditingSetId(null); setSetSaveError(null); }}>
+                              <Button size="sm" variant="ghost" className="rounded-full h-9 px-3" onClick={() => setEditingSetId(null)}>
                                 Cancel
                               </Button>
-                              {setSaveError && (
-                                <p className="text-xs text-destructive w-full mt-1">{setSaveError}</p>
-                              )}
                             </>
                           ) : (
                             <>
@@ -650,13 +655,10 @@ export function TemplateDetailClient({
                             </>
                           )}
                         </Button>
-                        <Button size="sm" variant="ghost" className="rounded-full h-9 px-4" onClick={() => { setEditingExerciseDetails(null); setAddSetError(null); }}>
+                        <Button size="sm" variant="ghost" className="rounded-full h-9 px-4" onClick={() => setEditingExerciseDetails(null)}>
                           Done
                         </Button>
                       </div>
-                      {addSetError && (
-                        <p className="text-sm text-destructive px-1">{addSetError}</p>
-                      )}
                     </div>
                   </div>
                 ) : (
