@@ -54,9 +54,36 @@ export async function updateTemplateExerciseAction(
     is_warmup?: boolean;
     display_name?: string | null;
   }
-) {
+): Promise<{ redirectTo?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data: row, error: rowErr } = await supabase
+    .from("template_exercises")
+    .select("template_id")
+    .eq("id", templateExerciseId)
+    .single();
+  if (rowErr || !row) throw new Error("Exercise not found");
+  const templateId = row.template_id as string;
+
+  const template = await getTemplate(templateId);
+  if (!template) throw new Error("Template not found");
+
+  if (template.user_id === null) {
+    const { newId, oldTeIdToNewTeId } = await forkTemplate(templateId, user.id);
+    const newTeId = oldTeIdToNewTeId[templateExerciseId];
+    if (newTeId) await updateTemplateExercise(newTeId, data);
+    revalidatePath("/");
+    revalidatePath("/templates");
+    revalidatePath(`/templates/${newId}`);
+    return { redirectTo: `/templates/${newId}` };
+  }
+
   await updateTemplateExercise(templateExerciseId, data);
   revalidatePath("/templates");
+  revalidatePath(`/templates/${templateId}`);
+  return {};
 }
 
 export async function removeTemplateExerciseAction(
@@ -90,21 +117,62 @@ export async function addTemplateExerciseAction(
 export async function reorderTemplateExercisesAction(
   templateId: string,
   orderedIds: string[]
+): Promise<{ redirectTo?: string; error?: string }> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
+
+    const template = await getTemplate(templateId);
+    if (!template) return { error: "Template not found" };
+
+    if (template.user_id === null) {
+      const { newId, oldTeIdToNewTeId } = await forkTemplate(templateId, user.id);
+      const orderedNewIds = orderedIds
+        .map((oldId) => oldTeIdToNewTeId[oldId])
+        .filter((id): id is string => Boolean(id));
+      if (orderedNewIds.length > 0) {
+        await reorderTemplateExercises(newId, orderedNewIds);
+      }
+      revalidatePath("/");
+      revalidatePath("/templates");
+      revalidatePath(`/templates/${newId}`);
+      return { redirectTo: `/templates/${newId}` };
+    }
+
+    await reorderTemplateExercises(templateId, orderedIds);
+    revalidatePath("/");
+    revalidatePath("/templates");
+    revalidatePath(`/templates/${templateId}`);
+    return {};
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not save order.";
+    return { error: message };
+  }
+}
+
+export async function addTemplateExerciseSetAction(
+  templateExerciseId: string,
+  setIndex: number,
+  options?: { repsMin?: number | null; repsMax?: number | null; weightKg?: number | null; tag?: string }
 ): Promise<{ redirectTo?: string }> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const { data: row } = await supabase
+    .from("template_exercises")
+    .select("template_id")
+    .eq("id", templateExerciseId)
+    .single();
 
-  const template = await getTemplate(templateId);
-  if (!template) throw new Error("Template not found");
+  const templateId = row?.template_id as string | undefined;
+  const template = templateId ? await getTemplate(templateId) : null;
 
-  if (template.user_id === null) {
-    const { newId, oldTeIdToNewTeId } = await forkTemplate(templateId, user.id);
-    const orderedNewIds = orderedIds
-      .map((oldId) => oldTeIdToNewTeId[oldId])
-      .filter((id): id is string => Boolean(id));
-    if (orderedNewIds.length > 0) {
-      await reorderTemplateExercises(newId, orderedNewIds);
+  if (template?.user_id === null) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
+    const { newId, oldTeIdToNewTeId } = await forkTemplate(templateId!, user.id);
+    const newTeId = oldTeIdToNewTeId[templateExerciseId];
+    if (newTeId) {
+      await addTemplateExerciseSet(newTeId, setIndex, options?.repsMin, options?.repsMax, options?.weightKg, options?.tag ?? "warmup");
     }
     revalidatePath("/");
     revalidatePath("/templates");
@@ -112,18 +180,6 @@ export async function reorderTemplateExercisesAction(
     return { redirectTo: `/templates/${newId}` };
   }
 
-  await reorderTemplateExercises(templateId, orderedIds);
-  revalidatePath("/");
-  revalidatePath("/templates");
-  revalidatePath(`/templates/${templateId}`);
-  return {};
-}
-
-export async function addTemplateExerciseSetAction(
-  templateExerciseId: string,
-  setIndex: number,
-  options?: { repsMin?: number | null; repsMax?: number | null; weightKg?: number | null; tag?: string }
-) {
   await addTemplateExerciseSet(
     templateExerciseId,
     setIndex,
@@ -133,6 +189,8 @@ export async function addTemplateExerciseSetAction(
     options?.tag ?? "warmup"
   );
   revalidatePath("/templates");
+  if (templateId) revalidatePath(`/templates/${templateId}`);
+  return {};
 }
 
 export async function updateTemplateExerciseSetAction(

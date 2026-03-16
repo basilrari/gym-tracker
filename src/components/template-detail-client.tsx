@@ -82,7 +82,10 @@ export function TemplateDetailClient({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [nameSaveError, setNameSaveError] = useState<string | null>(null);
+  const [exerciseNameSaveError, setExerciseNameSaveError] = useState<string | null>(null);
   const [reorderError, setReorderError] = useState<string | null>(null);
+  const [setSaveError, setSetSaveError] = useState<string | null>(null);
+  const [addSetError, setAddSetError] = useState<string | null>(null);
 
   async function handleStartWorkout() {
     setIsStarting(true);
@@ -169,18 +172,27 @@ export function TemplateDetailClient({
 
   async function saveExerciseName() {
     if (!editingExerciseId) return;
-    await updateTemplateExerciseAction(editingExerciseId, {
-      display_name: editExerciseName.trim() || null,
-    });
-    setExercises((prev) =>
-      prev.map((e) =>
-        e.id === editingExerciseId
-          ? { ...e, display_name: editExerciseName.trim() || null }
-          : e
-      )
-    );
-    setEditingExerciseId(null);
-    router.refresh();
+    setExerciseNameSaveError(null);
+    try {
+      const result = await updateTemplateExerciseAction(editingExerciseId, {
+        display_name: editExerciseName.trim() || null,
+      });
+      if (result?.redirectTo) {
+        router.push(result.redirectTo);
+        return;
+      }
+      setExercises((prev) =>
+        prev.map((e) =>
+          e.id === editingExerciseId
+            ? { ...e, display_name: editExerciseName.trim() || null }
+            : e
+        )
+      );
+      setEditingExerciseId(null);
+      router.refresh();
+    } catch (err) {
+      setExerciseNameSaveError(err instanceof Error ? err.message : "Could not save name.");
+    }
   }
 
   function startEditingSet(set: TemplateExerciseSet) {
@@ -189,38 +201,51 @@ export function TemplateDetailClient({
     setEditRepsMax(set.reps_max);
     setEditWeight(set.weight_kg);
     setEditTag(set.tag || "warmup");
+    setSetSaveError(null);
   }
 
   async function saveSetEdits() {
     if (!editingSetId) return;
+    setSetSaveError(null);
     const tagToSave = (editTag || "").trim() || "warmup";
-    await updateTemplateExerciseSetAction(editingSetId, {
-      reps_min: editRepsMin ?? undefined,
-      reps_max: editRepsMax ?? undefined,
-      weight_kg: editWeight ?? undefined,
-      tag: tagToSave,
-    });
-    setExercises((prev) =>
-      prev.map((e) => ({
-        ...e,
-        sets: e.sets.map((s) =>
-          s.id === editingSetId
-            ? { ...s, reps_min: editRepsMin, reps_max: editRepsMax, weight_kg: editWeight, tag: tagToSave }
-            : s
-        ),
-      }))
-    );
-    setEditingSetId(null);
-    router.refresh();
+    try {
+      await updateTemplateExerciseSetAction(editingSetId, {
+        reps_min: editRepsMin ?? undefined,
+        reps_max: editRepsMax ?? undefined,
+        weight_kg: editWeight ?? undefined,
+        tag: tagToSave,
+      });
+      setExercises((prev) =>
+        prev.map((e) => ({
+          ...e,
+          sets: e.sets.map((s) =>
+            s.id === editingSetId
+              ? { ...s, reps_min: editRepsMin, reps_max: editRepsMax, weight_kg: editWeight, tag: tagToSave }
+              : s
+          ),
+        }))
+      );
+      setEditingSetId(null);
+      router.refresh();
+    } catch (err) {
+      setSetSaveError(err instanceof Error ? err.message : "Could not save set.");
+    }
   }
 
   async function handleAddSet(teId: string) {
     const te = exercises.find((e) => e.id === teId);
     if (!te) return;
     setAddingSetForTeId(teId);
+    setAddSetError(null);
     try {
-      await addTemplateExerciseSetAction(teId, te.sets.length, { tag: "warmup" });
+      const result = await addTemplateExerciseSetAction(teId, te.sets.length, { tag: "warmup" });
+      if (result?.redirectTo) {
+        router.push(result.redirectTo);
+        return;
+      }
       router.refresh();
+    } catch (err) {
+      setAddSetError(err instanceof Error ? err.message : "Could not add set.");
     } finally {
       setAddingSetForTeId(null);
     }
@@ -253,6 +278,11 @@ export function TemplateDetailClient({
         template.id,
         newOrder.map((e) => e.id)
       );
+      if (result?.error) {
+        setReorderError(result.error);
+        setExercises(template.exercises);
+        return;
+      }
       if (result?.redirectTo) {
         router.push(result.redirectTo);
         return;
@@ -443,29 +473,39 @@ export function TemplateDetailClient({
               </div>
               <div className="flex-1 min-w-0">
                 {editingExerciseId === te.id ? (
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex flex-col gap-3 w-full">
+                    <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">
+                      Editing exercise name
+                    </label>
                     <input
                       type="text"
                       value={editExerciseName}
-                      onChange={(e) => setEditExerciseName(e.target.value)}
+                      onChange={(e) => { setEditExerciseName(e.target.value); setExerciseNameSaveError(null); }}
                       onKeyDown={(e) => e.key === "Enter" && saveExerciseName()}
-                      className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-card border border-border text-sm font-bold min-h-[48px] touch-manipulation"
+                      className="w-full px-4 py-3 rounded-xl bg-card border border-primary/30 text-sm font-bold min-h-[48px] touch-manipulation focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      placeholder="Exercise name"
                       autoFocus
                     />
-                    <Button size="sm" className="rounded-full h-9 px-4 min-h-[36px] touch-manipulation" onClick={saveExerciseName}>
-                      Save
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="rounded-full h-9 px-4 min-h-[36px] touch-manipulation"
-                      onClick={() => {
-                        setEditingExerciseId(null);
-                        setEditExerciseName("");
-                      }}
-                    >
-                      Cancel
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" className="rounded-full h-9 px-4 min-h-[36px] touch-manipulation" onClick={saveExerciseName}>
+                        Save
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="rounded-full h-9 px-4 min-h-[36px] touch-manipulation"
+                        onClick={() => {
+                          setEditingExerciseId(null);
+                          setEditExerciseName("");
+                          setExerciseNameSaveError(null);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                    {exerciseNameSaveError && (
+                      <p className="text-sm text-destructive px-1">{exerciseNameSaveError}</p>
+                    )}
                   </div>
                 ) : editingExerciseDetails === te.id ? (
                   <div className="space-y-3">
@@ -558,9 +598,12 @@ export function TemplateDetailClient({
                               <Button size="sm" className="rounded-full h-9 px-3" onClick={saveSetEdits}>
                                 Save
                               </Button>
-                              <Button size="sm" variant="ghost" className="rounded-full h-9 px-3" onClick={() => setEditingSetId(null)}>
+                              <Button size="sm" variant="ghost" className="rounded-full h-9 px-3" onClick={() => { setEditingSetId(null); setSetSaveError(null); }}>
                                 Cancel
                               </Button>
+                              {setSaveError && (
+                                <p className="text-xs text-destructive w-full mt-1">{setSaveError}</p>
+                              )}
                             </>
                           ) : (
                             <>
@@ -589,20 +632,31 @@ export function TemplateDetailClient({
                         </div>
                       ))}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="rounded-full h-9 px-4 gap-1"
-                        onClick={() => handleAddSet(te.id)}
-                        disabled={addingSetForTeId === te.id}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add set
-                      </Button>
-                      <Button size="sm" variant="ghost" className="rounded-full h-9 px-4" onClick={() => setEditingExerciseDetails(null)}>
-                        Done
-                      </Button>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="rounded-full h-9 px-4 gap-1"
+                          onClick={() => handleAddSet(te.id)}
+                          disabled={addingSetForTeId === te.id}
+                        >
+                          {addingSetForTeId === te.id ? (
+                            <span className="flex items-center gap-1">Adding…</span>
+                          ) : (
+                            <>
+                              <Plus className="h-4 w-4" />
+                              Add set
+                            </>
+                          )}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="rounded-full h-9 px-4" onClick={() => { setEditingExerciseDetails(null); setAddSetError(null); }}>
+                          Done
+                        </Button>
+                      </div>
+                      {addSetError && (
+                        <p className="text-sm text-destructive px-1">{addSetError}</p>
+                      )}
                     </div>
                   </div>
                 ) : (

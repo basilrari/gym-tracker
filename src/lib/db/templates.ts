@@ -176,20 +176,24 @@ export async function forkTemplate(
     oldTeIdToNewTeId[te.id] = (newTe as { id: string }).id;
   }
 
-  for (const te of source.exercises) {
-    const newTeId = oldTeIdToNewTeId[te.id];
-    if (!newTeId) continue;
-    for (const s of te.sets ?? []) {
-      const { error: setErr } = await supabase.from("template_exercise_sets").insert({
-        template_exercise_id: newTeId,
-        set_index: s.set_index,
-        reps_min: s.reps_min,
-        reps_max: s.reps_max,
-        weight_kg: s.weight_kg,
-        tag: s.tag,
-      });
-      if (setErr) throw setErr;
+  try {
+    for (const te of source.exercises) {
+      const newTeId = oldTeIdToNewTeId[te.id];
+      if (!newTeId) continue;
+      for (const s of te.sets ?? []) {
+        const { error: setErr } = await supabase.from("template_exercise_sets").insert({
+          template_exercise_id: newTeId,
+          set_index: s.set_index,
+          reps_min: s.reps_min,
+          reps_max: s.reps_max,
+          weight_kg: s.weight_kg,
+          tag: s.tag ?? "warmup",
+        });
+        if (setErr) throw setErr;
+      }
     }
+  } catch {
+    // template_exercise_sets table may not exist yet (migration not run); fork still succeeds with exercises only
   }
 
   return { newId, oldTeIdToNewTeId };
@@ -261,12 +265,18 @@ export async function updateTemplateExercise(
   >
 ): Promise<void> {
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("template_exercises")
     .update(data)
-    .eq("id", templateExerciseId);
+    .eq("id", templateExerciseId)
+    .select("id");
 
   if (error) throw error;
+  if (!updated?.length) {
+    throw new Error(
+      "Could not update. Duplicate this routine to edit it."
+    );
+  }
 }
 
 export async function removeTemplateExercise(
@@ -372,7 +382,12 @@ export async function addTemplateExerciseSet(
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    if (error.code === "42P01" || error.message?.includes("does not exist")) {
+      throw new Error("Add set is not available yet. Run the database migration (template_exercise_sets) in Supabase.");
+    }
+    throw error;
+  }
   return data as TemplateExerciseSet;
 }
 
