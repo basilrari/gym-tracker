@@ -5,22 +5,44 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getWorkoutWithSets } from "@/lib/db/workouts";
 import {
+  getTemplate,
   updateTemplate,
+  forkTemplate,
   updateTemplateExercise,
   removeTemplateExercise,
   addTemplateExercise,
   reorderTemplateExercises,
   createTemplate,
+  createTemplateExerciseWithSets,
+  addTemplateExerciseSet,
+  updateTemplateExerciseSet,
+  removeTemplateExerciseSet,
 } from "@/lib/db/templates";
 
 export async function updateTemplateAction(
   templateId: string,
   data: { name?: string; description?: string | null; scheduled_days?: number[] }
-) {
+): Promise<{ redirectTo?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const template = await getTemplate(templateId);
+  if (!template) throw new Error("Template not found");
+
+  if (template.user_id === null) {
+    const { newId } = await forkTemplate(templateId, user.id, data);
+    revalidatePath("/");
+    revalidatePath("/templates");
+    revalidatePath(`/templates/${newId}`);
+    return { redirectTo: `/templates/${newId}` };
+  }
+
   await updateTemplate(templateId, data);
   revalidatePath("/");
   revalidatePath("/templates");
   revalidatePath(`/templates/${templateId}`);
+  return {};
 }
 
 export async function updateTemplateExerciseAction(
@@ -68,11 +90,62 @@ export async function addTemplateExerciseAction(
 export async function reorderTemplateExercisesAction(
   templateId: string,
   orderedIds: string[]
-) {
+): Promise<{ redirectTo?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const template = await getTemplate(templateId);
+  if (!template) throw new Error("Template not found");
+
+  if (template.user_id === null) {
+    const { newId, oldTeIdToNewTeId } = await forkTemplate(templateId, user.id);
+    const orderedNewIds = orderedIds
+      .map((oldId) => oldTeIdToNewTeId[oldId])
+      .filter((id): id is string => Boolean(id));
+    if (orderedNewIds.length > 0) {
+      await reorderTemplateExercises(newId, orderedNewIds);
+    }
+    revalidatePath("/");
+    revalidatePath("/templates");
+    revalidatePath(`/templates/${newId}`);
+    return { redirectTo: `/templates/${newId}` };
+  }
+
   await reorderTemplateExercises(templateId, orderedIds);
   revalidatePath("/");
   revalidatePath("/templates");
   revalidatePath(`/templates/${templateId}`);
+  return {};
+}
+
+export async function addTemplateExerciseSetAction(
+  templateExerciseId: string,
+  setIndex: number,
+  options?: { repsMin?: number | null; repsMax?: number | null; weightKg?: number | null; tag?: string }
+) {
+  await addTemplateExerciseSet(
+    templateExerciseId,
+    setIndex,
+    options?.repsMin,
+    options?.repsMax,
+    options?.weightKg,
+    options?.tag ?? "warmup"
+  );
+  revalidatePath("/templates");
+}
+
+export async function updateTemplateExerciseSetAction(
+  setId: string,
+  data: { reps_min?: number | null; reps_max?: number | null; weight_kg?: number | null; tag?: string; set_index?: number }
+) {
+  await updateTemplateExerciseSet(setId, data);
+  revalidatePath("/templates");
+}
+
+export async function removeTemplateExerciseSetAction(setId: string) {
+  await removeTemplateExerciseSet(setId);
+  revalidatePath("/templates");
 }
 
 export async function createTemplateAction(name?: string) {
@@ -110,24 +183,36 @@ export async function createTemplateFromWorkoutAction(
     `From workout ${new Date(workout.start_time).toLocaleDateString()}`
   );
 
-  // Group sets by exercise_id, order by first set_index
-  const byExercise = new Map<number, { count: number; minIndex: number }>();
+  // Group sets by exercise_id; keep set_index for ordering
+  const byExercise = new Map<
+    number,
+    { sets: { set_index: number; reps_min: number; reps_max: number; weight_kg: number; tag: string }[] }
+  >();
   for (const s of workout.sets) {
+    const tag: string = s.is_warmup ? "warmup" : s.is_failure ? "failure" : "light";
+    const setEntry = {
+      set_index: s.set_index,
+      reps_min: s.reps,
+      reps_max: s.reps,
+      weight_kg: s.weight_kg,
+      tag,
+    };
     const cur = byExercise.get(s.exercise_id);
     if (!cur) {
-      byExercise.set(s.exercise_id, { count: 1, minIndex: s.set_index });
+      byExercise.set(s.exercise_id, { sets: [setEntry] });
     } else {
-      cur.count += 1;
-      cur.minIndex = Math.min(cur.minIndex, s.set_index);
+      cur.sets.push(setEntry);
     }
   }
-  const ordered = [...byExercise.entries()].sort(
-    (a, b) => a[1].minIndex - b[1].minIndex
-  );
+  const exerciseOrder = [...workout.sets]
+    .sort((a, b) => (a.exercise_id !== b.exercise_id ? a.exercise_id - b.exercise_id : a.set_index - b.set_index))
+    .reduce((acc, s) => (acc.includes(s.exercise_id) ? acc : [...acc, s.exercise_id]), [] as number[]);
 
-  for (let i = 0; i < ordered.length; i++) {
-    const [exerciseId, { count }] = ordered[i];
-    await addTemplateExercise(template.id, exerciseId, i, count);
+  for (let i = 0; i < exerciseOrder.length; i++) {
+    const exerciseId = exerciseOrder[i];
+    const { sets } = byExercise.get(exerciseId)!;
+    const sorted = [...sets].sort((a, b) => a.set_index - b.set_index).map(({ set_index: _idx, ...rest }) => rest);
+    await createTemplateExerciseWithSets(template.id, exerciseId, i, sorted);
   }
 
   revalidatePath("/");
@@ -159,22 +244,34 @@ export async function addWorkoutToTemplateAction(
       : -1;
   let nextOrderIndex = maxOrder + 1;
 
-  const byExercise = new Map<number, { count: number; minIndex: number }>();
+  const byExercise = new Map<
+    number,
+    { sets: { set_index: number; reps_min: number; reps_max: number; weight_kg: number; tag: string }[] }
+  >();
   for (const s of workout.sets) {
+    const tag: string = s.is_warmup ? "warmup" : s.is_failure ? "failure" : "light";
+    const setEntry = {
+      set_index: s.set_index,
+      reps_min: s.reps,
+      reps_max: s.reps,
+      weight_kg: s.weight_kg,
+      tag,
+    };
     const cur = byExercise.get(s.exercise_id);
     if (!cur) {
-      byExercise.set(s.exercise_id, { count: 1, minIndex: s.set_index });
+      byExercise.set(s.exercise_id, { sets: [setEntry] });
     } else {
-      cur.count += 1;
-      cur.minIndex = Math.min(cur.minIndex, s.set_index);
+      cur.sets.push(setEntry);
     }
   }
-  const ordered = [...byExercise.entries()].sort(
-    (a, b) => a[1].minIndex - b[1].minIndex
-  );
+  const exerciseOrder = [...workout.sets]
+    .sort((a, b) => (a.exercise_id !== b.exercise_id ? a.exercise_id - b.exercise_id : a.set_index - b.set_index))
+    .reduce((acc, s) => (acc.includes(s.exercise_id) ? acc : [...acc, s.exercise_id]), [] as number[]);
 
-  for (const [exerciseId, { count }] of ordered) {
-    await addTemplateExercise(templateId, exerciseId, nextOrderIndex, count);
+  for (const exerciseId of exerciseOrder) {
+    const { sets } = byExercise.get(exerciseId)!;
+    const sorted = [...sets].sort((a, b) => a.set_index - b.set_index).map(({ set_index: _idx, ...rest }) => rest);
+    await createTemplateExerciseWithSets(templateId, exerciseId, nextOrderIndex, sorted);
     nextOrderIndex += 1;
   }
 

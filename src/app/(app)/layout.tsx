@@ -24,7 +24,7 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <main className="flex-1 min-h-0 overflow-auto pt-4">
+      <main className="flex-1 min-h-0 overflow-auto pt-4 pb-24">
         <PageTransition>{children}</PageTransition>
       </main>
       <AppNav />

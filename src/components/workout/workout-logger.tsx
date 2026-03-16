@@ -60,8 +60,12 @@ export function WorkoutLogger({
 
   const currentExercise = templateExercises[currentExerciseIndex];
   const exerciseSets = sets.filter((s) => s.exercise_id === currentExercise?.exercise_id);
-  const targetSets = currentExercise?.target_sets ?? 1;
+  const templateSets = currentExercise?.sets ?? [];
+  const targetSets = (templateSets.length || currentExercise?.target_sets) ?? 1;
   const nextSetIndex = exerciseSets.length;
+  const currentTemplateSet = templateSets[nextSetIndex];
+  const setTagWarmup = currentTemplateSet ? currentTemplateSet.tag === "warmup" : (currentExercise?.is_warmup ?? false);
+  const setTagFailure = (currentTemplateSet?.tag === "failure") || isFailure;
   const history = currentExercise ? historyMap[currentExercise.exercise_id] ?? [] : [];
   const lastSessionBest = history[0]?.sets
     ?.filter((s) => !s.is_warmup)
@@ -78,7 +82,7 @@ export function WorkoutLogger({
         nextSetIndex,
         weight,
         reps,
-        { isWarmup: currentExercise.is_warmup, isFailure }
+        { isWarmup: setTagWarmup, isFailure: setTagFailure }
       );
 
       setSets((prev) => [
@@ -92,8 +96,8 @@ export function WorkoutLogger({
           reps,
           rpe: null,
           rest_seconds: null,
-          is_warmup: currentExercise.is_warmup,
-          is_failure: isFailure,
+          is_warmup: setTagWarmup,
+          is_failure: setTagFailure,
           created_at: new Date().toISOString(),
         },
       ]);
@@ -110,7 +114,8 @@ export function WorkoutLogger({
     nextSetIndex,
     weight,
     reps,
-    isFailure,
+    setTagWarmup,
+    setTagFailure,
     saving,
     lastSessionBest,
   ]);
@@ -209,7 +214,7 @@ export function WorkoutLogger({
                   cx="24" cy="24" r="20" fill="none" stroke="currentColor" strokeWidth="3"
                   className="text-primary drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)]"
                   strokeDasharray="125.6"
-                  strokeDashoffset={Math.max(0, 125.6 - (125.6 * (sets.length / Math.max(1, templateExercises.reduce((acc, te) => acc + te.target_sets, 0)))))}
+                  strokeDashoffset={Math.max(0, 125.6 - (125.6 * (sets.length / Math.max(1, templateExercises.reduce((acc, te) => acc + (te.sets?.length ?? te.target_sets ?? 1), 0)))))}
                   style={{ transition: "stroke-dashoffset 0.5s ease" }}
                 />
               </svg>
@@ -236,7 +241,7 @@ export function WorkoutLogger({
           <div className="absolute top-0 left-0 right-1 h-6 bg-gradient-to-b from-background to-transparent pointer-events-none z-10 rounded-t-2xl" />
           <div className="absolute bottom-0 left-0 right-1 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none z-10 rounded-b-2xl" />
           {templateExercises.map((te, i) => {
-            const completed = sets.filter((s) => s.exercise_id === te.exercise_id).length >= te.target_sets;
+            const completed = sets.filter((s) => s.exercise_id === te.exercise_id).length >= (te.sets?.length ?? te.target_sets ?? 1);
             const isActive = i === currentExerciseIndex;
             return (
               <button
@@ -262,8 +267,12 @@ export function WorkoutLogger({
             <div className="text-center space-y-1">
               <h2 className="font-bold text-2xl tracking-tight break-words">{currentExercise.exercise.name}</h2>
               <p className="text-sm text-primary font-medium tracking-wide">
-                TARGET: {currentExercise.target_sets} SETS
-                {currentExercise.target_reps_min ? ` × ${currentExercise.target_reps_min}-${currentExercise.target_reps_max} REPS` : ""}
+                TARGET: {targetSets} SETS
+                {currentTemplateSet
+                  ? ` × ${currentTemplateSet.reps_min ?? "?"}-${currentTemplateSet.reps_max ?? "?"} REPS (${currentTemplateSet.tag.toUpperCase()})`
+                  : currentExercise.target_reps_min
+                    ? ` × ${currentExercise.target_reps_min}-${currentExercise.target_reps_max} REPS`
+                    : ""}
               </p>
               {history[0] && (
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mt-2">
@@ -502,7 +511,7 @@ export function WorkoutLogger({
                     type="button"
                     variant="ghost"
                     className={`rounded-full h-14 px-4 sm:px-6 flex-shrink-0 transition-all duration-200 touch-manipulation min-h-[56px] ${
-                      isFailure 
+                      setTagFailure 
                         ? "shadow-neu-pressed text-destructive bg-background/50" 
                         : "shadow-neu-extruded text-muted-foreground"
                     }`}

@@ -14,10 +14,21 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import type { TemplateWithExercises } from "@/lib/db/types";
+import type { TemplateWithExercises, TemplateExerciseSet } from "@/lib/db/types";
 import type { Exercise } from "@/lib/db/types";
-import { updateTemplateAction, addTemplateExerciseAction, removeTemplateExerciseAction, reorderTemplateExercisesAction, updateTemplateExerciseAction } from "@/app/actions/templates";
+import { updateTemplateAction, addTemplateExerciseAction, removeTemplateExerciseAction, reorderTemplateExercisesAction, updateTemplateExerciseAction, addTemplateExerciseSetAction, updateTemplateExerciseSetAction, removeTemplateExerciseSetAction } from "@/app/actions/templates";
 import { createExerciseAction } from "@/app/actions/exercises";
+
+const PRESET_TAGS = [
+  { value: "warmup", label: "Warmup" },
+  { value: "light", label: "Light" },
+  { value: "hard", label: "Hard" },
+  { value: "failure", label: "Failure" },
+] as const;
+const PRESET_VALUES = new Set(PRESET_TAGS.map((t) => t.value));
+function isPresetTag(tag: string): boolean {
+  return PRESET_VALUES.has(tag as (typeof PRESET_TAGS)[number]["value"]);
+}
 
 const DAY_LABELS: { value: number; label: string }[] = [
   { value: 1, label: "M" },
@@ -62,12 +73,16 @@ export function TemplateDetailClient({
   const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
   const [editExerciseName, setEditExerciseName] = useState("");
   const [editingExerciseDetails, setEditingExerciseDetails] = useState<string | null>(null);
-  const [editTargetSets, setEditTargetSets] = useState(1);
-  const [editTargetRepsMin, setEditTargetRepsMin] = useState<number | null>(null);
-  const [editTargetRepsMax, setEditTargetRepsMax] = useState<number | null>(null);
-  const [editIsWarmup, setEditIsWarmup] = useState(false);
+  const [editingSetId, setEditingSetId] = useState<string | null>(null);
+  const [editRepsMin, setEditRepsMin] = useState<number | null>(null);
+  const [editRepsMax, setEditRepsMax] = useState<number | null>(null);
+  const [editWeight, setEditWeight] = useState<number | null>(null);
+  const [editTag, setEditTag] = useState<string>("warmup");
+  const [addingSetForTeId, setAddingSetForTeId] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [nameSaveError, setNameSaveError] = useState<string | null>(null);
+  const [reorderError, setReorderError] = useState<string | null>(null);
 
   async function handleStartWorkout() {
     setIsStarting(true);
@@ -89,10 +104,20 @@ export function TemplateDetailClient({
 
   async function saveName() {
     const name = editName.trim() || template.name;
-    await updateTemplateAction(template.id, { name });
-    setEditName(name);
-    setEditingName(false);
-    router.refresh();
+    setNameSaveError(null);
+    try {
+      const result = await updateTemplateAction(template.id, { name });
+      if (result?.redirectTo) {
+        router.push(result.redirectTo);
+        return;
+      }
+      setEditName(name);
+      setEditingName(false);
+      router.refresh();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not save name.";
+      setNameSaveError(message);
+    }
   }
 
   async function saveDescription() {
@@ -158,37 +183,62 @@ export function TemplateDetailClient({
     router.refresh();
   }
 
-  async function saveExerciseDetails() {
-    if (!editingExerciseDetails) return;
-    await updateTemplateExerciseAction(editingExerciseDetails, {
-      target_sets: editTargetSets,
-      target_reps_min: editTargetRepsMin ?? undefined,
-      target_reps_max: editTargetRepsMax ?? undefined,
-      is_warmup: editIsWarmup,
+  function startEditingSet(set: TemplateExerciseSet) {
+    setEditingSetId(set.id);
+    setEditRepsMin(set.reps_min);
+    setEditRepsMax(set.reps_max);
+    setEditWeight(set.weight_kg);
+    setEditTag(set.tag || "warmup");
+  }
+
+  async function saveSetEdits() {
+    if (!editingSetId) return;
+    const tagToSave = (editTag || "").trim() || "warmup";
+    await updateTemplateExerciseSetAction(editingSetId, {
+      reps_min: editRepsMin ?? undefined,
+      reps_max: editRepsMax ?? undefined,
+      weight_kg: editWeight ?? undefined,
+      tag: tagToSave,
     });
     setExercises((prev) =>
+      prev.map((e) => ({
+        ...e,
+        sets: e.sets.map((s) =>
+          s.id === editingSetId
+            ? { ...s, reps_min: editRepsMin, reps_max: editRepsMax, weight_kg: editWeight, tag: tagToSave }
+            : s
+        ),
+      }))
+    );
+    setEditingSetId(null);
+    router.refresh();
+  }
+
+  async function handleAddSet(teId: string) {
+    const te = exercises.find((e) => e.id === teId);
+    if (!te) return;
+    setAddingSetForTeId(teId);
+    try {
+      await addTemplateExerciseSetAction(teId, te.sets.length, { tag: "warmup" });
+      router.refresh();
+    } finally {
+      setAddingSetForTeId(null);
+    }
+  }
+
+  async function handleRemoveSet(setId: string, teId: string) {
+    await removeTemplateExerciseSetAction(setId);
+    setExercises((prev) =>
       prev.map((e) =>
-        e.id === editingExerciseDetails
-          ? { 
-              ...e, 
-              target_sets: editTargetSets,
-              target_reps_min: editTargetRepsMin,
-              target_reps_max: editTargetRepsMax,
-              is_warmup: editIsWarmup,
-            }
-          : e
+        e.id === teId ? { ...e, sets: e.sets.filter((s) => s.id !== setId) } : e
       )
     );
-    setEditingExerciseDetails(null);
     router.refresh();
   }
 
   function startEditingDetails(te: typeof exercises[0]) {
     setEditingExerciseDetails(te.id);
-    setEditTargetSets(te.target_sets);
-    setEditTargetRepsMin(te.target_reps_min);
-    setEditTargetRepsMax(te.target_reps_max);
-    setEditIsWarmup(te.is_warmup);
+    setEditingSetId(null);
   }
 
   async function moveExercise(index: number, direction: "up" | "down") {
@@ -197,11 +247,22 @@ export function TemplateDetailClient({
     if (swapIndex < 0 || swapIndex >= newOrder.length) return;
     [newOrder[index], newOrder[swapIndex]] = [newOrder[swapIndex], newOrder[index]];
     setExercises(newOrder);
-    await reorderTemplateExercisesAction(
-      template.id,
-      newOrder.map((e) => e.id)
-    );
-    router.refresh();
+    setReorderError(null);
+    try {
+      const result = await reorderTemplateExercisesAction(
+        template.id,
+        newOrder.map((e) => e.id)
+      );
+      if (result?.redirectTo) {
+        router.push(result.redirectTo);
+        return;
+      }
+      router.refresh();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not save order.";
+      setReorderError(message);
+      setExercises(template.exercises);
+    }
   }
 
   return (
@@ -214,23 +275,28 @@ export function TemplateDetailClient({
         </Link>
         <div className="flex-1 min-w-0">
           {editingName ? (
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <input
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && saveName()}
-                className="flex-1 min-w-0 px-4 py-3 rounded-2xl bg-card border border-border text-lg font-bold min-h-[48px] touch-manipulation"
-                autoFocus
-              />
-              <div className="flex gap-2">
-                <Button size="sm" className="rounded-full" onClick={saveName}>
-                  Save
-                </Button>
-                <Button size="sm" variant="ghost" className="rounded-full" onClick={() => { setEditingName(false); setEditName(template.name); }}>
-                  Cancel
-                </Button>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => { setEditName(e.target.value); setNameSaveError(null); }}
+                  onKeyDown={(e) => e.key === "Enter" && saveName()}
+                  className="flex-1 min-w-0 px-4 py-3 rounded-2xl bg-card border border-border text-lg font-bold min-h-[48px] touch-manipulation"
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" className="rounded-full" onClick={saveName}>
+                    Save
+                  </Button>
+                  <Button size="sm" variant="ghost" className="rounded-full" onClick={() => { setEditingName(false); setEditName(template.name); setNameSaveError(null); }}>
+                    Cancel
+                  </Button>
+                </div>
               </div>
+              {nameSaveError && (
+                <p className="text-sm text-destructive px-1">{nameSaveError}</p>
+              )}
             </div>
           ) : (
             <button
@@ -340,6 +406,9 @@ export function TemplateDetailClient({
             Add exercise
           </Button>
         </div>
+        {reorderError && (
+          <p className="text-sm text-destructive px-2">{reorderError}</p>
+        )}
         <div className="p-4 rounded-3xl bg-card shadow-neu-extruded space-y-4">
           {exercises.map((te, i) => (
             <motion.div
@@ -403,86 +472,136 @@ export function TemplateDetailClient({
                     <p className="font-bold text-lg leading-tight break-words">
                       {te.display_name ?? te.exercise.name}
                     </p>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs text-muted-foreground uppercase tracking-wider">Sets</span>
-                        <input
-                          type="number"
-                          min={1}
-                          max={20}
-                          value={editTargetSets}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === "") {
-                              setEditTargetSets(0);
-                            } else {
-                              const num = parseInt(val, 10);
-                              setEditTargetSets(Number.isNaN(num) ? 0 : num);
-                            }
-                          }}
-                          onBlur={() => setEditTargetSets((v) => Math.max(1, v || 1))}
-                          className="w-16 h-11 rounded-lg shadow-neu-inset bg-card border-0 text-center text-base font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[44px] touch-manipulation"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs text-muted-foreground uppercase tracking-wider">Reps</span>
-                        <input
-                          type="number"
-                          min={1}
-                          max={100}
-                          value={editTargetRepsMin ?? ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === "") {
-                              setEditTargetRepsMin(null);
-                            } else {
-                              const num = parseInt(val, 10);
-                              setEditTargetRepsMin(Number.isNaN(num) ? null : num);
-                            }
-                          }}
-                          placeholder="Min"
-                          className="w-16 h-11 rounded-lg shadow-neu-inset bg-card border-0 text-center text-base font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[44px] touch-manipulation"
-                        />
-                        <span className="text-muted-foreground">–</span>
-                        <input
-                          type="number"
-                          min={1}
-                          max={100}
-                          value={editTargetRepsMax ?? ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === "") {
-                              setEditTargetRepsMax(null);
-                            } else {
-                              const num = parseInt(val, 10);
-                              setEditTargetRepsMax(Number.isNaN(num) ? null : num);
-                            }
-                          }}
-                          placeholder="Max"
-                          className="w-16 h-11 rounded-lg shadow-neu-inset bg-card border-0 text-center text-base font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[44px] touch-manipulation"
-                        />
-                      </div>
-                      <label className="flex items-center gap-2 cursor-pointer touch-manipulation min-h-[44px]">
-                        <input
-                          type="checkbox"
-                          checked={editIsWarmup}
-                          onChange={(e) => setEditIsWarmup(e.target.checked)}
-                          className="w-5 h-5 rounded border-border text-primary focus:ring-primary/50 min-h-[20px] min-w-[20px]"
-                        />
-                        <span className="text-xs text-muted-foreground uppercase tracking-wider">Warmup</span>
-                      </label>
+                    <div className="space-y-2">
+                      {(te.sets ?? []).map((set, idx) => (
+                        <div
+                          key={set.id}
+                          className="flex flex-wrap items-center gap-2 p-3 rounded-xl bg-card shadow-neu-inset"
+                        >
+                          {editingSetId === set.id ? (
+                            <>
+                              <span className="text-xs text-muted-foreground w-8">Set {idx + 1}</span>
+                              <input
+                                type="number"
+                                min={1}
+                                max={100}
+                                value={editRepsMin ?? ""}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  setEditRepsMin(v === "" ? null : parseInt(v, 10) || null);
+                                }}
+                                placeholder="Min"
+                                className="w-12 h-9 rounded-lg shadow-neu-inset bg-card border-0 text-center text-sm font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                              />
+                              <span className="text-muted-foreground">–</span>
+                              <input
+                                type="number"
+                                min={1}
+                                max={100}
+                                value={editRepsMax ?? ""}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  setEditRepsMax(v === "" ? null : parseInt(v, 10) || null);
+                                }}
+                                placeholder="Max"
+                                className="w-12 h-9 rounded-lg shadow-neu-inset bg-card border-0 text-center text-sm font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                              />
+                              <input
+                                type="number"
+                                min={0}
+                                step={0.5}
+                                value={editWeight ?? ""}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  setEditWeight(v === "" ? null : parseFloat(v) || null);
+                                }}
+                                placeholder="kg"
+                                className="w-12 h-9 rounded-lg shadow-neu-inset bg-card border-0 text-center text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                              />
+                              <div className="flex flex-wrap items-center gap-1">
+                                {PRESET_TAGS.map(({ value, label }) => (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setEditTag(value)}
+                                    className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase transition-all ${
+                                      editTag === value
+                                        ? "bg-primary text-primary-foreground shadow-neu-extruded drop-shadow-[0_0_5px_rgba(255,100,0,0.5)]"
+                                        : "bg-card shadow-neu-inset text-muted-foreground hover:text-foreground"
+                                    }`}
+                                  >
+                                    {label}
+                                  </button>
+                                ))}
+                                <button
+                                  type="button"
+                                  onClick={() => setEditTag(isPresetTag(editTag) ? "" : editTag)}
+                                  className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase transition-all ${
+                                    !isPresetTag(editTag)
+                                      ? "bg-primary text-primary-foreground shadow-neu-extruded drop-shadow-[0_0_5px_rgba(255,100,0,0.5)]"
+                                      : "bg-card shadow-neu-inset text-muted-foreground hover:text-foreground"
+                                  }`}
+                                >
+                                  Custom
+                                </button>
+                                {!isPresetTag(editTag) && (
+                                  <input
+                                    type="text"
+                                    value={editTag}
+                                    onChange={(e) => setEditTag(e.target.value)}
+                                    placeholder="e.g. drop set"
+                                    className="w-24 h-8 px-2 rounded-lg shadow-neu-inset bg-card border-0 text-[11px] font-medium uppercase focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    maxLength={32}
+                                  />
+                                )}
+                              </div>
+                              <Button size="sm" className="rounded-full h-9 px-3" onClick={saveSetEdits}>
+                                Save
+                              </Button>
+                              <Button size="sm" variant="ghost" className="rounded-full h-9 px-3" onClick={() => setEditingSetId(null)}>
+                                Cancel
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-xs text-muted-foreground w-8">Set {idx + 1}</span>
+                              <span className="text-sm font-medium">
+                                {set.reps_min != null && set.reps_max != null
+                                  ? `${set.reps_min}–${set.reps_max} reps`
+                                  : set.reps_min != null
+                                    ? `${set.reps_min} reps`
+                                    : "? reps"}
+                                {set.weight_kg != null && set.weight_kg > 0 && ` · ${set.weight_kg} kg`}
+                              </span>
+                              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                                set.tag === "warmup" ? "bg-primary/20 text-primary" : "bg-card text-muted-foreground"
+                              }`}>
+                                {set.tag}
+                              </span>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => startEditingSet(set)} aria-label="Edit set">
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full text-destructive hover:text-destructive" onClick={() => handleRemoveSet(set.id, te.id)} aria-label="Remove set">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" className="rounded-full h-9 px-4 min-h-[36px] touch-manipulation" onClick={saveExerciseDetails}>
-                        Save
-                      </Button>
+                    <div className="flex flex-wrap items-center gap-2">
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="rounded-full h-9 px-4 min-h-[36px] touch-manipulation"
-                        onClick={() => setEditingExerciseDetails(null)}
+                        className="rounded-full h-9 px-4 gap-1"
+                        onClick={() => handleAddSet(te.id)}
+                        disabled={addingSetForTeId === te.id}
                       >
-                        Cancel
+                        <Plus className="h-4 w-4" />
+                        Add set
+                      </Button>
+                      <Button size="sm" variant="ghost" className="rounded-full h-9 px-4" onClick={() => setEditingExerciseDetails(null)}>
+                        Done
                       </Button>
                     </div>
                   </div>
@@ -503,12 +622,21 @@ export function TemplateDetailClient({
                     <button
                       type="button"
                       onClick={() => startEditingDetails(te)}
-                      className="text-left w-full touch-manipulation"
+                      className="text-left w-full touch-manipulation space-y-1.5"
                     >
-                      <p className="text-xs font-medium text-primary tracking-wide uppercase py-2 px-3 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors inline-block">
-                        {te.target_sets} SETS × {te.target_reps_min ?? "?"}{te.target_reps_max && te.target_reps_max !== te.target_reps_min ? `–${te.target_reps_max}` : ""} REPS
-                        {te.is_warmup && " (WARMUP)"}
-                      </p>
+                      {(te.sets ?? []).length === 0 ? (
+                        <p className="text-xs font-medium text-primary tracking-wide uppercase py-2 px-3 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors inline-block">
+                          No sets — tap to add
+                        </p>
+                      ) : (
+                        (te.sets ?? []).map((set, idx) => (
+                          <p key={set.id} className="text-xs font-medium text-primary tracking-wide uppercase py-2 px-3 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors inline-block mr-2 mb-1">
+                            {idx + 1} SET × {set.reps_min != null && set.reps_max != null ? `${set.reps_min}–${set.reps_max}` : set.reps_min ?? "?"} REPS
+                            {set.weight_kg != null && set.weight_kg > 0 && ` · ${set.weight_kg} kg`}
+                            {" "}({set.tag.toUpperCase()})
+                          </p>
+                        ))
+                      )}
                     </button>
                   </div>
                 )}
@@ -654,9 +782,9 @@ export function TemplateDetailClient({
                       {te.display_name ?? te.exercise.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {te.target_sets} sets
-                      {te.target_reps_min && ` × ${te.target_reps_min}${te.target_reps_max && te.target_reps_max !== te.target_reps_min ? `-${te.target_reps_max}` : ""} reps`}
-                      {te.is_warmup && " (warmup)"}
+                      {(te.sets ?? []).length} set{(te.sets ?? []).length !== 1 ? "s" : ""}
+                      {(te.sets ?? []).length > 0 && (te.sets ?? [])[0] && ` × ${(te.sets ?? [])[0].reps_min ?? "?"}${(te.sets ?? [])[0].reps_max && (te.sets ?? [])[0].reps_max !== (te.sets ?? [])[0].reps_min ? `-${(te.sets ?? [])[0].reps_max}` : ""} reps`}
+                      {(te.sets ?? [])[0]?.tag === "warmup" && " (warmup)"}
                     </p>
                   </div>
                 </div>

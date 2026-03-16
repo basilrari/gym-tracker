@@ -40,6 +40,20 @@ export type WorkoutTemplate = {
   created_at: string;
 };
 
+/** Preset tag values; custom tags are also allowed (any string). */
+export type SetTag = "hard" | "failure" | "warmup" | "light";
+
+export type TemplateExerciseSet = {
+  id: string;
+  template_exercise_id: string;
+  set_index: number;
+  reps_min: number | null;
+  reps_max: number | null;
+  weight_kg: number | null;
+  tag: string;
+  created_at: string;
+};
+
 export type TemplateExercise = {
   id: string;
   template_id: string;
@@ -52,8 +66,13 @@ export type TemplateExercise = {
   display_name?: string | null;
 };
 
+export type TemplateExerciseWithSets = TemplateExercise & {
+  exercise: Exercise;
+  sets: TemplateExerciseSet[];
+};
+
 export type TemplateWithExercises = WorkoutTemplate & {
-  exercises: (TemplateExercise & { exercise: Exercise })[];
+  exercises: TemplateExerciseWithSets[];
 };
 
 export type Workout = {
@@ -79,6 +98,7 @@ export type WorkoutSet = {
   rest_seconds: number | null;
   is_warmup: boolean;
   is_failure: boolean;
+  set_tag?: string | null;
   created_at: string;
 };
 

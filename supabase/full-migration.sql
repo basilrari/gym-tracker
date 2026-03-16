@@ -294,3 +294,52 @@ ALTER TABLE workout_templates ADD COLUMN IF NOT EXISTS scheduled_days INTEGER[] 
 
 -- Add display_name to template_exercises for custom names per routine
 ALTER TABLE template_exercises ADD COLUMN IF NOT EXISTS display_name TEXT;
+
+-- ========== 6. Template exercise sets (multi-set per exercise) ==========
+CREATE TABLE IF NOT EXISTS template_exercise_sets (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  template_exercise_id UUID NOT NULL REFERENCES template_exercises(id) ON DELETE CASCADE,
+  set_index INTEGER NOT NULL,
+  reps_min INTEGER,
+  reps_max INTEGER,
+  weight_kg NUMERIC,
+  tag TEXT NOT NULL DEFAULT 'warmup',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(template_exercise_id, set_index)
+);
+
+CREATE INDEX IF NOT EXISTS idx_template_exercise_sets_template_exercise_id ON template_exercise_sets(template_exercise_id);
+
+ALTER TABLE template_exercise_sets ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "template_exercise_sets_select" ON template_exercise_sets;
+DROP POLICY IF EXISTS "template_exercise_sets_insert" ON template_exercise_sets;
+DROP POLICY IF EXISTS "template_exercise_sets_update" ON template_exercise_sets;
+DROP POLICY IF EXISTS "template_exercise_sets_delete" ON template_exercise_sets;
+CREATE POLICY "template_exercise_sets_select" ON template_exercise_sets FOR SELECT USING (
+  EXISTS (SELECT 1 FROM template_exercises te JOIN workout_templates t ON t.id = te.template_id WHERE te.id = template_exercise_id AND (t.user_id = auth.uid() OR t.user_id IS NULL))
+);
+CREATE POLICY "template_exercise_sets_insert" ON template_exercise_sets FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM template_exercises te JOIN workout_templates t ON t.id = te.template_id WHERE te.id = template_exercise_id AND (t.user_id = auth.uid() OR t.user_id IS NULL))
+);
+CREATE POLICY "template_exercise_sets_update" ON template_exercise_sets FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM template_exercises te JOIN workout_templates t ON t.id = te.template_id WHERE te.id = template_exercise_id AND t.user_id = auth.uid())
+);
+CREATE POLICY "template_exercise_sets_delete" ON template_exercise_sets FOR DELETE USING (
+  EXISTS (SELECT 1 FROM template_exercises te JOIN workout_templates t ON t.id = te.template_id WHERE te.id = template_exercise_id AND t.user_id = auth.uid())
+);
+
+-- Backfill: one set per existing template_exercise from current target_* and is_warmup
+INSERT INTO template_exercise_sets (template_exercise_id, set_index, reps_min, reps_max, weight_kg, tag)
+SELECT id, 0, target_reps_min, target_reps_max, NULL, CASE WHEN is_warmup THEN 'warmup' ELSE 'light' END
+FROM template_exercises
+WHERE NOT EXISTS (SELECT 1 FROM template_exercise_sets tes WHERE tes.template_exercise_id = template_exercises.id);
+
+-- Optional: store tag on completed workout sets for consistency
+ALTER TABLE workout_sets ADD COLUMN IF NOT EXISTS set_tag TEXT;
+
+-- Allow custom tags: drop restrictive CHECK so any tag string is allowed (e.g. up to 50 chars)
+ALTER TABLE template_exercise_sets DROP CONSTRAINT IF EXISTS template_exercise_sets_tag_check;
+ALTER TABLE workout_sets DROP CONSTRAINT IF EXISTS workout_sets_set_tag_check;
+-- Re-add optional length limit for custom tags (optional; omit to allow any length)
+-- ALTER TABLE template_exercise_sets ADD CONSTRAINT template_exercise_sets_tag_len CHECK (char_length(tag) <= 50);

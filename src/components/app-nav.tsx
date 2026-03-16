@@ -23,7 +23,7 @@ export function AppNav() {
   if (isWorkoutPage) return null;
 
   return (
-    <nav className="flex-shrink-0 w-full bg-card border-t border-border shadow-neu-inset px-2 py-3 pb-6">
+    <nav className="sticky bottom-0 z-30 flex-shrink-0 w-full bg-card border-t border-border shadow-neu-inset px-2 py-3 pb-6">
       <div className="max-w-md mx-auto flex justify-around items-center">
         {navItems.map((item) => {
           const isActive =
