@@ -20,6 +20,12 @@ import type { Exercise } from "@/lib/db/types";
 import { updateTemplateAction, addTemplateExerciseAction, removeTemplateExerciseAction, reorderTemplateExercisesAction, updateTemplateExerciseAction, addTemplateExerciseSetAction, updateTemplateExerciseSetAction, removeTemplateExerciseSetAction } from "@/app/actions/templates";
 import { createExerciseAction } from "@/app/actions/exercises";
 
+function errorMessage(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object" && "message" in value && typeof (value as { message: unknown }).message === "string") return (value as { message: string }).message;
+  return value != null ? String(value) : "Something went wrong.";
+}
+
 const PRESET_TAGS = [
   { value: "warmup", label: "Warmup" },
   { value: "light", label: "Light" },
@@ -115,7 +121,7 @@ export function TemplateDetailClient({
     try {
       const result = await updateTemplateAction(template.id, { name });
       if (result?.error) {
-        toast.error(result.error);
+        toast.error(errorMessage(result.error));
         return;
       }
       if (result?.redirectTo) {
@@ -136,7 +142,7 @@ export function TemplateDetailClient({
         description: editDescription.trim() || null,
       });
       if (result?.error) {
-        toast.error(result.error);
+        toast.error(errorMessage(result.error));
         return;
       }
       if (result?.redirectTo) {
@@ -255,7 +261,7 @@ export function TemplateDetailClient({
     try {
       const result = await addTemplateExerciseSetAction(teId, te.sets.length, { tag: "warmup" });
       if (result?.error) {
-        toast.error(result.error);
+        toast.error(errorMessage(result.error));
         return;
       }
       if (result?.redirectTo) {
@@ -297,7 +303,7 @@ export function TemplateDetailClient({
         newOrder.map((e) => e.id)
       );
       if (result?.error) {
-        toast.error(result.error);
+        toast.error(errorMessage(result.error));
         setExercises(template.exercises);
         return;
       }

@@ -295,11 +295,15 @@ export async function reorderTemplateExercises(
   templateId: string,
   orderedIds: string[]
 ): Promise<void> {
+  if (orderedIds.length === 0) return;
   const supabase = await createClient();
+  // Two-phase update to avoid UNIQUE(template_id, order_index) violations:
+  // first move all to a high temporary range, then set final order_index.
+  const offset = 10000;
   for (let i = 0; i < orderedIds.length; i++) {
     const { data: updated, error } = await supabase
       .from("template_exercises")
-      .update({ order_index: i })
+      .update({ order_index: offset + i })
       .eq("id", orderedIds[i])
       .eq("template_id", templateId)
       .select("id");
@@ -310,6 +314,15 @@ export async function reorderTemplateExercises(
         "Could not save exercise order. Duplicate this routine to reorder exercises."
       );
     }
+  }
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from("template_exercises")
+      .update({ order_index: i })
+      .eq("id", orderedIds[i])
+      .eq("template_id", templateId);
+
+    if (error) throw error;
   }
 }
 
