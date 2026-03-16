@@ -57,37 +57,42 @@ export async function getTemplateWithExercises(
   if (teError) throw teError;
 
   const teIds = (templateExercises ?? []).map((te) => te.id);
+  const setsByTeId = new Map<string, TemplateExerciseSet[]>();
+
   const { data: setsRows, error: setsError } = await supabase
     .from("template_exercise_sets")
     .select("*")
     .in("template_exercise_id", teIds.length ? teIds : ["00000000-0000-0000-0000-000000000000"])
     .order("set_index");
 
-  if (setsError) throw setsError;
-
-  const setsByTeId = new Map<string, TemplateExerciseSet[]>();
-  for (const row of setsRows ?? []) {
-    const s = row as TemplateExerciseSet;
-    const list = setsByTeId.get(s.template_exercise_id) ?? [];
-    list.push(s);
-    setsByTeId.set(s.template_exercise_id, list);
+  if (!setsError && setsRows?.length) {
+    for (const row of setsRows) {
+      const s = row as TemplateExerciseSet;
+      const list = setsByTeId.get(s.template_exercise_id) ?? [];
+      list.push(s);
+      setsByTeId.set(s.template_exercise_id, list);
+    }
+    for (const list of setsByTeId.values()) {
+      list.sort((a, b) => a.set_index - b.set_index);
+    }
   }
-  for (const list of setsByTeId.values()) {
-    list.sort((a, b) => a.set_index - b.set_index);
-  }
+  // If template_exercise_sets table is missing or query fails (e.g. migration not run), each exercise gets sets: [] and UI falls back to target_sets
 
   const exerciseIds = [
     ...new Set((templateExercises ?? []).map((te) => te.exercise_id)),
   ];
-  const { data: exercises, error: exError } = await supabase
-    .from("exercises")
-    .select("*")
-    .in("id", exerciseIds);
-
-  if (exError) throw exError;
+  let exercises: unknown[] = [];
+  if (exerciseIds.length > 0) {
+    const { data, error: exError } = await supabase
+      .from("exercises")
+      .select("*")
+      .in("id", exerciseIds);
+    if (exError) throw exError;
+    exercises = data ?? [];
+  }
 
   const exerciseMap = new Map(
-    (exercises ?? []).map((e) => [e.id, e as Exercise])
+    (exercises as Exercise[]).map((e) => [e.id, e as Exercise])
   );
 
   const exercisesWithDetails: TemplateExerciseWithSets[] = (templateExercises ?? [])
