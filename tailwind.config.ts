@@ -9,6 +9,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      maxWidth: {
+        mobile: "430px",
+      },
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",

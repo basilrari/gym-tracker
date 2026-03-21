@@ -6,6 +6,7 @@ import { Home, Dumbbell, History, BarChart3, Trophy, LogOut } from "lucide-react
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -23,8 +24,8 @@ export function AppNav() {
   if (isWorkoutPage) return null;
 
   return (
-    <nav className="sticky bottom-0 z-30 flex-shrink-0 w-full bg-card border-t border-border shadow-neu-inset px-2 py-3 pb-6">
-      <div className="max-w-md mx-auto flex justify-around items-center">
+    <nav className="sticky bottom-0 z-30 flex-shrink-0 w-full glass-nav border-t border-white/10 dark:border-white/5 px-2 py-3 pb-6 safe-area-pb">
+      <div className="max-w-[430px] mx-auto flex justify-around items-center gap-0.5 flex-wrap">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -45,6 +46,7 @@ export function AppNav() {
             </Link>
           );
         })}
+        <ThemeToggle />
       </div>
     </nav>
   );
