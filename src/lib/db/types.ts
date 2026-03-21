@@ -130,3 +130,58 @@ export type LeaderboardRow = {
 };
 
 export type LeaderboardPeriod = "7d" | "30d" | "all_time";
+
+/** workout_sessions — v2 active workout */
+export type WorkoutSession = {
+  id: string;
+  user_id: string;
+  name: string;
+  template_id: string | null;
+  started_at: string;
+  ended_at: string | null;
+  duration_minutes: number | null;
+  total_volume_kg: number | null;
+  notes: string | null;
+  created_at: string;
+};
+
+/** exercise_logs — one row per exercise instance in a session */
+export type ExerciseLog = {
+  id: string;
+  session_id: string;
+  exercise_id: number;
+  order_index: number;
+  remarks: string | null;
+  created_at: string;
+};
+
+/** sets — per exercise_log (table name: sets) */
+export type WorkoutSessionSetRow = {
+  id: string;
+  exercise_log_id: string;
+  set_number: number;
+  reps: number | null;
+  weight_kg: number | null;
+  tags: string[];
+  remarks: string | null;
+  rest_seconds: number | null;
+  created_at: string;
+};
+
+export type BodyWeightEntry = {
+  id: string;
+  user_id: string;
+  date: string;
+  weight_kg: number;
+  notes: string | null;
+  created_at: string;
+};
+
+export type ExerciseLogWithSets = ExerciseLog & {
+  sets: WorkoutSessionSetRow[];
+  exercise: Exercise;
+};
+
+export type WorkoutSessionWithLogs = WorkoutSession & {
+  logs: ExerciseLogWithSets[];
+};

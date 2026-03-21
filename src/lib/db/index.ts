@@ -3,6 +3,7 @@ export * from "./profiles";
 export * from "./exercises";
 export * from "./templates";
 export * from "./workouts";
+export * from "./workout-sessions";
 export * from "./sets";
 export * from "./body-measurements";
 export * from "./leaderboards";

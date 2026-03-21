@@ -82,7 +82,11 @@ export function WorkoutLogger({
         nextSetIndex,
         weight,
         reps,
-        { isWarmup: setTagWarmup, isFailure: setTagFailure }
+        {
+          isWarmup: setTagWarmup,
+          isFailure: setTagFailure,
+          exerciseOrderIndex: currentExerciseIndex,
+        }
       );
 
       setSets((prev) => [

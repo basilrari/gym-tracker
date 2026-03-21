@@ -9,7 +9,12 @@ export async function saveSetAction(
   setIndex: number,
   weightKg: number,
   reps: number,
-  options?: { rpe?: number; isWarmup?: boolean; isFailure?: boolean }
+  options?: {
+    rpe?: number;
+    isWarmup?: boolean;
+    isFailure?: boolean;
+    exerciseOrderIndex?: number;
+  }
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -19,6 +24,7 @@ export async function saveSetAction(
     rpe: options?.rpe,
     isWarmup: options?.isWarmup ?? false,
     isFailure: options?.isFailure ?? false,
+    exerciseOrderIndex: options?.exerciseOrderIndex,
   });
 
   return { set };

@@ -11,6 +11,8 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Gym Tracker",
   description: "Mobile-first workout logging for the gym",
+  appleWebApp: { capable: true, title: "Gym Tracker", statusBarStyle: "black-translucent" },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
@@ -19,6 +21,10 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#e8f4fc" },
+    { media: "(prefers-color-scheme: dark)", color: "#05080c" },
+  ],
 };
 
 export default function RootLayout({

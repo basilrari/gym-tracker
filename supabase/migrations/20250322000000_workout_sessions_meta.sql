@@ -1,0 +1,3 @@
+ALTER TABLE workout_sessions
+  ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT 'Workout',
+  ADD COLUMN IF NOT EXISTS template_id UUID REFERENCES workout_templates(id) ON DELETE SET NULL;
