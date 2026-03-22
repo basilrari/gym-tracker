@@ -118,10 +118,13 @@ export async function getWorkoutWithSets(
   if (sessionDetail) {
     const workout = sessionToWorkout(sessionDetail);
     const orderedLogs = [...sessionDetail.logs].sort((a, b) => a.order_index - b.order_index);
-    const sessionExerciseLogOrder = orderedLogs.map((l) => ({
-      logId: l.id,
-      exerciseId: l.exercise_id,
-    }));
+    const sessionExerciseLogOrder =
+      orderedLogs.length > 0
+        ? orderedLogs.map((l) => ({
+            logId: l.id,
+            exerciseId: l.exercise_id,
+          }))
+        : undefined;
     return {
       ...workout,
       sets: logsToWorkoutSets(workoutId, sessionDetail),
@@ -211,7 +214,7 @@ export async function updateWorkout(
   const s = await getWorkoutSession(workoutId);
   if (s) {
     if (data.name != null) await updateSessionName(workoutId, data.name);
-    if (data.notes != null) {
+    if (data.notes !== undefined) {
       const supabase = await createClient();
       await supabase.from("workout_sessions").update({ notes: data.notes }).eq("id", workoutId);
     }

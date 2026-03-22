@@ -156,7 +156,11 @@ export function HistoryClient({ workouts, templates }: HistoryClientProps) {
   const handleSaveEdit = () => {
     if (!editWorkout) return;
     startTransition(async () => {
-      await updateWorkoutAction(editWorkout.id, editName, editNotes);
+      const result = await updateWorkoutAction(editWorkout.id, editName, editNotes);
+      if (!result.ok) {
+        alert(result.message);
+        return;
+      }
       setEditWorkout(null);
       router.refresh();
     });

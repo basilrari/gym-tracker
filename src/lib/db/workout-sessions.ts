@@ -15,6 +15,10 @@ function parseTags(raw: unknown): string[] {
   return [];
 }
 
+/** Filter client drag payloads (ignore optimistic `opt-*` ids). */
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function isWorkoutSessionId(id: string): Promise<boolean> {
   const supabase = await createClient();
   const { data } = await supabase.from("workout_sessions").select("id").eq("id", id).maybeSingle();
@@ -141,6 +145,23 @@ export async function addExerciseLog(
 
 export async function reorderExerciseLogs(sessionId: string, orderedLogIds: string[]): Promise<void> {
   const supabase = await createClient();
+  const { data: rows, error: fetchErr } = await supabase
+    .from("exercise_logs")
+    .select("id")
+    .eq("session_id", sessionId);
+  if (fetchErr) throw fetchErr;
+  const serverIds = new Set((rows ?? []).map((r) => r.id as string));
+  if (orderedLogIds.some((id) => !UUID_RE.test(id))) {
+    throw new Error("Invalid exercise log id in reorder");
+  }
+  if (
+    orderedLogIds.length !== serverIds.size ||
+    orderedLogIds.some((id) => !serverIds.has(id))
+  ) {
+    throw new Error("Exercise reorder payload does not match server state");
+  }
+  if (orderedLogIds.length <= 1) return;
+
   const offset = 10000;
   for (let i = 0; i < orderedLogIds.length; i++) {
     const { error } = await supabase
@@ -221,6 +242,23 @@ export async function deleteSessionSet(setId: string): Promise<void> {
 
 export async function reorderSessionSets(exerciseLogId: string, orderedSetIds: string[]): Promise<void> {
   const supabase = await createClient();
+  const { data: rows, error: fetchErr } = await supabase
+    .from("sets")
+    .select("id")
+    .eq("exercise_log_id", exerciseLogId);
+  if (fetchErr) throw fetchErr;
+  const serverIds = new Set((rows ?? []).map((r) => r.id as string));
+  if (orderedSetIds.some((id) => !UUID_RE.test(id))) {
+    throw new Error("Invalid set id in reorder");
+  }
+  if (
+    orderedSetIds.length !== serverIds.size ||
+    orderedSetIds.some((id) => !serverIds.has(id))
+  ) {
+    throw new Error("Set reorder payload does not match server state");
+  }
+  if (orderedSetIds.length <= 1) return;
+
   const offset = 10000;
   for (let i = 0; i < orderedSetIds.length; i++) {
     const { error } = await supabase

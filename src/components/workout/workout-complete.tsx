@@ -27,6 +27,7 @@ export function WorkoutComplete({ workout }: WorkoutCompleteProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editName, setEditName] = useState(workout.name);
+  const [editNameError, setEditNameError] = useState<string | null>(null);
 
   useEffect(() => {
     setShowConfetti(true);
@@ -91,7 +92,11 @@ export function WorkoutComplete({ workout }: WorkoutCompleteProps) {
           variant="ghost"
           size="sm"
           className="w-full rounded-full text-muted-foreground hover:text-foreground"
-          onClick={() => { setEditDialogOpen(true); setEditName(workout.name); }}
+          onClick={() => {
+            setEditDialogOpen(true);
+            setEditName(workout.name);
+            setEditNameError(null);
+          }}
         >
           <Pencil className="h-4 w-4 mr-2" />
           Edit workout name
@@ -123,6 +128,11 @@ export function WorkoutComplete({ workout }: WorkoutCompleteProps) {
             className="w-full px-4 py-3 rounded-2xl bg-card border border-border shadow-neu-inset text-foreground"
             placeholder="Workout name"
           />
+          {editNameError && (
+            <p className="text-sm text-destructive" role="alert">
+              {editNameError}
+            </p>
+          )}
           <DialogFooter className="flex gap-2 sm:flex-row">
             <Button variant="outline" className="rounded-full" onClick={() => setEditDialogOpen(false)}>
               Cancel
@@ -130,7 +140,12 @@ export function WorkoutComplete({ workout }: WorkoutCompleteProps) {
             <Button
               className="rounded-full"
               onClick={async () => {
-                await updateWorkoutAction(workout.id, editName);
+                setEditNameError(null);
+                const result = await updateWorkoutAction(workout.id, editName);
+                if (!result.ok) {
+                  setEditNameError(result.message);
+                  return;
+                }
                 setEditDialogOpen(false);
                 router.refresh();
               }}

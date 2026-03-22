@@ -61,16 +61,29 @@ export async function updateWorkoutAction(
   workoutId: string,
   name: string,
   notes?: string | null
-) {
+): Promise<{ ok: true } | { ok: false; message: string }> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  const patch: Parameters<typeof updateWorkout>[1] = {
-    name: name.trim() || "Workout",
-  };
-  if (notes !== undefined) patch.notes = notes;
-  await updateWorkout(workoutId, patch);
-  revalidatePath("/history");
-  revalidatePath("/");
-  revalidatePath("/progress");
+
+  try {
+    const patch: Parameters<typeof updateWorkout>[1] = {
+      name: name.trim() || "Workout",
+    };
+    if (notes !== undefined) patch.notes = notes;
+    await updateWorkout(workoutId, patch);
+    revalidatePath("/history");
+    revalidatePath("/");
+    revalidatePath("/progress");
+    revalidatePath(`/workout/${workoutId}/complete`);
+    return { ok: true };
+  } catch (e) {
+    const message =
+      e && typeof e === "object" && "message" in e
+        ? String((e as { message: unknown }).message)
+        : String(e);
+    return { ok: false, message };
+  }
 }

@@ -13,6 +13,7 @@ export async function saveSetAction(
     rpe?: number;
     isWarmup?: boolean;
     isFailure?: boolean;
+    exerciseLogId?: string;
     exerciseOrderIndex?: number;
     tags?: string[];
     remarks?: string | null;
@@ -27,6 +28,7 @@ export async function saveSetAction(
     rpe: options?.rpe,
     isWarmup: options?.isWarmup ?? false,
     isFailure: options?.isFailure ?? false,
+    exerciseLogId: options?.exerciseLogId,
     exerciseOrderIndex: options?.exerciseOrderIndex,
     tags: options?.tags,
     remarks: options?.remarks,

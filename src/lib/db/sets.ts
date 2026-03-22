@@ -13,6 +13,8 @@ export async function insertSet(
     restSeconds?: number;
     isWarmup?: boolean;
     isFailure?: boolean;
+    /** Preferred: stable after exercise reorder (order_index alone can desync). */
+    exerciseLogId?: string;
     exerciseOrderIndex?: number;
     tags?: string[];
     remarks?: string | null;
@@ -20,18 +22,29 @@ export async function insertSet(
 ): Promise<WorkoutSet> {
   const session = await getWorkoutSession(workoutId);
   if (session) {
-    if (options?.exerciseOrderIndex === undefined) {
-      throw new Error("exerciseOrderIndex required for session-based workouts");
-    }
     const supabase = await createClient();
-    const { data: log, error: logErr } = await supabase
-      .from("exercise_logs")
-      .select("id")
-      .eq("session_id", workoutId)
-      .eq("order_index", options.exerciseOrderIndex)
-      .single();
-
-    if (logErr || !log) throw logErr ?? new Error("Exercise log not found");
+    let logId: string;
+    if (options?.exerciseLogId) {
+      const { data: log, error: logErr } = await supabase
+        .from("exercise_logs")
+        .select("id")
+        .eq("id", options.exerciseLogId)
+        .eq("session_id", workoutId)
+        .single();
+      if (logErr || !log) throw logErr ?? new Error("Exercise log not found");
+      logId = log.id as string;
+    } else if (options?.exerciseOrderIndex !== undefined) {
+      const { data: log, error: logErr } = await supabase
+        .from("exercise_logs")
+        .select("id")
+        .eq("session_id", workoutId)
+        .eq("order_index", options.exerciseOrderIndex)
+        .single();
+      if (logErr || !log) throw logErr ?? new Error("Exercise log not found");
+      logId = log.id as string;
+    } else {
+      throw new Error("exerciseLogId or exerciseOrderIndex required for session-based workouts");
+    }
 
     const tags: string[] = [...(options?.tags ?? [])];
     if (options?.isWarmup) tags.push("warmup");
@@ -39,7 +52,7 @@ export async function insertSet(
     const uniqueTags = [...new Set(tags.map((t) => t.trim()).filter(Boolean))];
 
     const row = await insertSessionSet(
-      log.id as string,
+      logId,
       setIndex + 1,
       reps,
       weightKg,

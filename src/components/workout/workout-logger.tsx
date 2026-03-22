@@ -95,7 +95,7 @@ export function WorkoutLogger({
   historyMap,
   restTimerSeconds,
 }: WorkoutLoggerProps) {
-  const isSession = workout.sessionExerciseLogOrder != null;
+  const isSession = (workout.sessionExerciseLogOrder?.length ?? 0) > 0;
 
   const [elapsed, setElapsed] = useState(0);
   const [slots, setSlots] = useState<Slot[]>(() => buildSlots(workout, templateExercises));
@@ -124,10 +124,18 @@ export function WorkoutLogger({
   const [editSetRemarks, setEditSetRemarks] = useState("");
   const [editSetRest, setEditSetRest] = useState<number | null>(null);
   const optimisticRef = useRef<Set<string>>(new Set());
+  const saveInFlightRef = useRef(false);
+  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setSlots(buildSlots(workout, templateExercises));
   }, [workout.id, workout.sessionExerciseLogOrder, templateExercises]);
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     setSets(workout.sets);
@@ -153,7 +161,17 @@ export function WorkoutLogger({
       .sort((a, b) => a.set_index - b.set_index);
   }, [sets, currentSlot]);
 
-  const exerciseSortableIds = useMemo(() => exerciseSets.map((s) => s.id), [exerciseSets]);
+  /** Only persisted rows participate in drag + server reorder (avoids `opt-*` in payloads). */
+  const persistedExerciseSets = useMemo(
+    () => exerciseSets.filter((s) => !s.id.startsWith("opt-")),
+    [exerciseSets]
+  );
+  const optimisticExerciseSets = useMemo(
+    () => exerciseSets.filter((s) => s.id.startsWith("opt-")),
+    [exerciseSets]
+  );
+
+  const exerciseSortableIds = useMemo(() => persistedExerciseSets.map((s) => s.id), [persistedExerciseSets]);
 
   const templateSets = currentExercise?.sets ?? [];
   const targetSets = (templateSets.length || currentExercise?.target_sets) ?? 1;
@@ -171,6 +189,7 @@ export function WorkoutLogger({
   const exerciseOrderIndex = currentSlotIndex;
 
   const refreshFromServer = useCallback(async () => {
+    if (saveInFlightRef.current) return;
     const snap = await getWorkoutSetsSnapshotAction(workout.id);
     setSets(snap.sets);
     if (snap.exerciseLogOrder?.length) {
@@ -183,6 +202,15 @@ export function WorkoutLogger({
       );
     }
   }, [workout.id]);
+
+  const scheduleRefreshFromServer = useCallback(() => {
+    if (saveInFlightRef.current) return;
+    if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+    refreshTimeoutRef.current = setTimeout(() => {
+      refreshTimeoutRef.current = null;
+      void refreshFromServer();
+    }, 200);
+  }, [refreshFromServer]);
 
   const logIdsKey = useMemo(
     () =>
@@ -208,7 +236,7 @@ export function WorkoutLogger({
         filter: `session_id=eq.${workout.id}`,
       },
       () => {
-        void refreshFromServer();
+        scheduleRefreshFromServer();
       }
     );
 
@@ -222,7 +250,7 @@ export function WorkoutLogger({
           filter: `exercise_log_id=eq.${id}`,
         },
         () => {
-          void refreshFromServer();
+          scheduleRefreshFromServer();
         }
       );
     }
@@ -231,7 +259,7 @@ export function WorkoutLogger({
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [isSession, workout.id, logIdsKey, refreshFromServer]);
+  }, [isSession, workout.id, logIdsKey, scheduleRefreshFromServer]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -274,13 +302,16 @@ export function WorkoutLogger({
     const oldIndex = ids.indexOf(String(active.id));
     const newIndex = ids.indexOf(String(over.id));
     if (oldIndex < 0 || newIndex < 0) return;
-    const reordered = arrayMove([...exerciseSets], oldIndex, newIndex).map((s, i) => ({
+    const reordered = arrayMove([...persistedExerciseSets], oldIndex, newIndex).map((s, i) => ({
       ...s,
       set_index: i,
     }));
     setSets((prev) => {
       const others = prev.filter((s) => s.exercise_id !== currentSlot.exerciseId);
-      return [...others, ...reordered];
+      const optimistic = prev.filter(
+        (s) => s.exercise_id === currentSlot.exerciseId && s.id.startsWith("opt-")
+      );
+      return [...others, ...reordered, ...optimistic];
     });
     try {
       await reorderSessionSetsAction(
@@ -323,6 +354,7 @@ export function WorkoutLogger({
     };
     optimisticRef.current.add(tempId);
     setSets((prev) => [...prev, optimistic]);
+    saveInFlightRef.current = true;
     setSaving(true);
     try {
       const { set: saved } = await saveSetAction(
@@ -334,7 +366,9 @@ export function WorkoutLogger({
         {
           isWarmup: setTagWarmup,
           isFailure: setTagFailure,
-          exerciseOrderIndex,
+          ...(currentSlot.logId
+            ? { exerciseLogId: currentSlot.logId }
+            : { exerciseOrderIndex }),
           tags: tagList,
           remarks: remarks.trim() || null,
           restSeconds: restPresetSec,
@@ -352,6 +386,7 @@ export function WorkoutLogger({
       optimisticRef.current.delete(tempId);
       setSets((prev) => prev.filter((s) => s.id !== tempId));
     } finally {
+      saveInFlightRef.current = false;
       setSaving(false);
     }
   }, [
@@ -634,14 +669,42 @@ export function WorkoutLogger({
             <div className="relative max-h-[260px] overflow-y-auto scrollbar-neu pr-1 -mr-1">
               <div className="space-y-3 mt-2 pb-4">
                 {isSession && currentSlot.logId ? (
-                  <SortableContext items={exerciseSortableIds} strategy={verticalListSortingStrategy}>
+                  <>
+                    <SortableContext items={exerciseSortableIds} strategy={verticalListSortingStrategy}>
+                      <AnimatePresence initial={false}>
+                        {persistedExerciseSets.map((s, i) => (
+                          <SortableSetRow
+                            key={s.id}
+                            id={s.id}
+                            index={i}
+                            set={s}
+                            editingSetId={editingSetId}
+                            editSetWeight={editSetWeight}
+                            editSetReps={editSetReps}
+                            editSetIsFailure={editSetIsFailure}
+                            editSetTags={editSetTags}
+                            editSetRemarks={editSetRemarks}
+                            editSetRest={editSetRest}
+                            setEditSetWeight={setEditSetWeight}
+                            setEditSetReps={setEditSetReps}
+                            setEditSetIsFailure={setEditSetIsFailure}
+                            setEditSetTags={setEditSetTags}
+                            setEditSetRemarks={setEditSetRemarks}
+                            setEditSetRest={setEditSetRest}
+                            onSaveEdit={handleUpdateSet}
+                            onCancelEdit={() => setEditingSetId(null)}
+                            onStartEdit={startEditingSet}
+                            onDelete={handleDeleteSet}
+                          />
+                        ))}
+                      </AnimatePresence>
+                    </SortableContext>
                     <AnimatePresence initial={false}>
-                      {exerciseSets.map((s, i) => (
-                        <SortableSetRow
+                      {optimisticExerciseSets.map((s, i) => (
+                        <SetRowStatic
                           key={s.id}
-                          id={s.id}
-                          index={i}
                           set={s}
+                          index={persistedExerciseSets.length + i}
                           editingSetId={editingSetId}
                           editSetWeight={editSetWeight}
                           editSetReps={editSetReps}
@@ -662,7 +725,7 @@ export function WorkoutLogger({
                         />
                       ))}
                     </AnimatePresence>
-                  </SortableContext>
+                  </>
                 ) : (
                   <AnimatePresence initial={false}>
                     {exerciseSets.map((s, i) => (
