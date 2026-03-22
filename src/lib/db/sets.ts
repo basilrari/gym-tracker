@@ -14,6 +14,8 @@ export async function insertSet(
     isWarmup?: boolean;
     isFailure?: boolean;
     exerciseOrderIndex?: number;
+    tags?: string[];
+    remarks?: string | null;
   }
 ): Promise<WorkoutSet> {
   const session = await getWorkoutSession(workoutId);
@@ -31,18 +33,24 @@ export async function insertSet(
 
     if (logErr || !log) throw logErr ?? new Error("Exercise log not found");
 
-    const tags: string[] = [];
+    const tags: string[] = [...(options?.tags ?? [])];
     if (options?.isWarmup) tags.push("warmup");
     if (options?.isFailure) tags.push("failure");
+    const uniqueTags = [...new Set(tags.map((t) => t.trim()).filter(Boolean))];
 
     const row = await insertSessionSet(
       log.id as string,
       setIndex + 1,
       reps,
       weightKg,
-      { tags, restSeconds: options?.restSeconds ?? null }
+      {
+        tags: uniqueTags,
+        remarks: options?.remarks ?? null,
+        restSeconds: options?.restSeconds ?? null,
+      }
     );
 
+    const outTags = row.tags ?? uniqueTags;
     return {
       id: row.id,
       workout_id: workoutId,
@@ -52,9 +60,11 @@ export async function insertSet(
       reps: row.reps ?? reps,
       rpe: options?.rpe ?? null,
       rest_seconds: row.rest_seconds,
-      is_warmup: options?.isWarmup ?? false,
-      is_failure: options?.isFailure ?? false,
+      is_warmup: outTags.includes("warmup"),
+      is_failure: outTags.includes("failure"),
       created_at: row.created_at,
+      session_tags: outTags,
+      remarks: row.remarks ?? null,
     };
   }
 
@@ -99,6 +109,9 @@ export async function updateSet(
     reps?: number;
     is_failure?: boolean;
     is_warmup?: boolean;
+    tags?: string[];
+    remarks?: string | null;
+    rest_seconds?: number | null;
   }
 ): Promise<void> {
   const supabase = await createClient();
@@ -107,19 +120,24 @@ export async function updateSet(
     const { data: full } = await supabase.from("sets").select("tags").eq("id", setId).single();
     const raw = full?.tags;
     const prev = Array.isArray(raw) ? raw.map((t) => String(t)) : [];
-    let tags = [...prev];
-    if (data.is_failure !== undefined) {
-      tags = tags.filter((t) => t !== "failure");
-      if (data.is_failure) tags.push("failure");
+    let tags = data.tags !== undefined ? [...data.tags] : [...prev];
+    if (data.tags === undefined) {
+      if (data.is_failure !== undefined) {
+        tags = tags.filter((t) => t !== "failure");
+        if (data.is_failure) tags.push("failure");
+      }
+      if (data.is_warmup !== undefined) {
+        tags = tags.filter((t) => t !== "warmup");
+        if (data.is_warmup) tags.push("warmup");
+      }
     }
-    if (data.is_warmup !== undefined) {
-      tags = tags.filter((t) => t !== "warmup");
-      if (data.is_warmup) tags.push("warmup");
-    }
+    tags = [...new Set(tags.map((t) => t.trim()).filter(Boolean))];
     const patch: Parameters<typeof updateSessionSet>[1] = {};
     if (data.weight_kg !== undefined) patch.weight_kg = data.weight_kg;
     if (data.reps !== undefined) patch.reps = data.reps;
-    if (data.is_failure !== undefined || data.is_warmup !== undefined) patch.tags = tags;
+    if (data.is_failure !== undefined || data.is_warmup !== undefined || data.tags !== undefined) patch.tags = tags;
+    if (data.remarks !== undefined) patch.remarks = data.remarks;
+    if (data.rest_seconds !== undefined) patch.rest_seconds = data.rest_seconds;
     await updateSessionSet(setId, patch);
     return;
   }
@@ -128,6 +146,8 @@ export async function updateSet(
   if (data.weight_kg !== undefined) legacy.weight_kg = data.weight_kg;
   if (data.reps !== undefined) legacy.reps = data.reps;
   if (data.is_failure !== undefined) legacy.is_failure = data.is_failure;
+  if (data.is_warmup !== undefined) legacy.is_warmup = data.is_warmup;
+  if (data.rest_seconds !== undefined) legacy.rest_seconds = data.rest_seconds;
   const { error } = await supabase.from("workout_sets").update(legacy).eq("id", setId);
 
   if (error) throw error;

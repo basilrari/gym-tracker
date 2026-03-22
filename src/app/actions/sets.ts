@@ -14,6 +14,9 @@ export async function saveSetAction(
     isWarmup?: boolean;
     isFailure?: boolean;
     exerciseOrderIndex?: number;
+    tags?: string[];
+    remarks?: string | null;
+    restSeconds?: number | null;
   }
 ) {
   const supabase = await createClient();
@@ -25,6 +28,9 @@ export async function saveSetAction(
     isWarmup: options?.isWarmup ?? false,
     isFailure: options?.isFailure ?? false,
     exerciseOrderIndex: options?.exerciseOrderIndex,
+    tags: options?.tags,
+    remarks: options?.remarks,
+    restSeconds: options?.restSeconds ?? undefined,
   });
 
   return { set };
@@ -36,6 +42,10 @@ export async function updateSetAction(
     weight_kg?: number;
     reps?: number;
     is_failure?: boolean;
+    is_warmup?: boolean;
+    tags?: string[];
+    remarks?: string | null;
+    rest_seconds?: number | null;
   }
 ) {
   const supabase = await createClient();

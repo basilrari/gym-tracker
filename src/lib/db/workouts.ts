@@ -54,6 +54,8 @@ function logsToWorkoutSets(sessionId: string, detail: Awaited<ReturnType<typeof 
         is_failure: tags.includes("failure"),
         created_at: s.created_at,
         set_tag: tags[0] ?? null,
+        session_tags: tags,
+        remarks: s.remarks ?? null,
       });
     }
   }
@@ -114,7 +116,16 @@ export async function getWorkoutWithSets(
   const sessionDetail = await getWorkoutSessionWithLogs(workoutId);
   if (sessionDetail) {
     const workout = sessionToWorkout(sessionDetail);
-    return { ...workout, sets: logsToWorkoutSets(workoutId, sessionDetail) };
+    const orderedLogs = [...sessionDetail.logs].sort((a, b) => a.order_index - b.order_index);
+    const sessionExerciseLogOrder = orderedLogs.map((l) => ({
+      logId: l.id,
+      exerciseId: l.exercise_id,
+    }));
+    return {
+      ...workout,
+      sets: logsToWorkoutSets(workoutId, sessionDetail),
+      sessionExerciseLogOrder,
+    };
   }
 
   const workout = await getWorkout(workoutId);

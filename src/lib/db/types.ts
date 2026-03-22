@@ -100,10 +100,15 @@ export type WorkoutSet = {
   is_failure: boolean;
   set_tag?: string | null;
   created_at: string;
+  /** Session `sets` table: full tag list (warmup, failure, pr, …) */
+  session_tags?: string[];
+  remarks?: string | null;
 };
 
 export type WorkoutWithSets = Workout & {
   sets: WorkoutSet[];
+  /** Present when workout is a `workout_sessions` row (v2). */
+  sessionExerciseLogOrder?: { logId: string; exerciseId: number }[];
 };
 
 export type BodyMeasurement = {
