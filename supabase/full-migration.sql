@@ -2,7 +2,7 @@
 -- Copy and paste the entire file, then click Run
 
 -- ========== 1. Initial Schema ==========
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- UUIDs: gen_random_uuid() is built-in on Postgres 13+ (avoids uuid-ossp / schema issues on Supabase)
 
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS exercises (
 );
 
 CREATE TABLE IF NOT EXISTS workout_templates (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS workout_templates (
 );
 
 CREATE TABLE IF NOT EXISTS template_exercises (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   template_id UUID NOT NULL REFERENCES workout_templates(id) ON DELETE CASCADE,
   exercise_id INTEGER NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
   order_index INTEGER NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS template_exercises (
 );
 
 CREATE TABLE IF NOT EXISTS workouts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   template_id UUID REFERENCES workout_templates(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS workouts (
 );
 
 CREATE TABLE IF NOT EXISTS workout_sets (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workout_id UUID NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
   exercise_id INTEGER NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
   set_index INTEGER NOT NULL,
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS workout_sets (
 );
 
 CREATE TABLE IF NOT EXISTS body_measurements (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   date DATE NOT NULL,
   weight_kg NUMERIC,
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS body_measurements (
 );
 
 CREATE TABLE IF NOT EXISTS achievements (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
@@ -105,14 +105,14 @@ CREATE TABLE IF NOT EXISTS achievements (
 );
 
 CREATE TABLE IF NOT EXISTS user_achievements (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   achievement_id UUID NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
   earned_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS leaderboard_metrics (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   period TEXT NOT NULL CHECK (period IN ('7d', '30d', 'all_time')),
   start_date DATE,
@@ -297,7 +297,7 @@ ALTER TABLE template_exercises ADD COLUMN IF NOT EXISTS display_name TEXT;
 
 -- ========== 6. Template exercise sets (multi-set per exercise) ==========
 CREATE TABLE IF NOT EXISTS template_exercise_sets (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   template_exercise_id UUID NOT NULL REFERENCES template_exercises(id) ON DELETE CASCADE,
   set_index INTEGER NOT NULL,
   reps_min INTEGER,

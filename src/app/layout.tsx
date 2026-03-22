@@ -11,8 +11,17 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Gym Tracker",
   description: "Mobile-first workout logging for the gym",
-  appleWebApp: { capable: true, title: "Gym Tracker", statusBarStyle: "black-translucent" },
+  applicationName: "Gym Tracker",
+  appleWebApp: {
+    capable: true,
+    title: "Gym Tracker",
+    statusBarStyle: "black-translucent",
+  },
   formatDetection: { telephone: false },
+  icons: {
+    icon: [{ url: "/icons/icon-192.svg", type: "image/svg+xml", sizes: "192x192" }],
+    apple: [{ url: "/icons/icon-192.svg", sizes: "180x180" }],
+  },
 };
 
 export const viewport: Viewport = {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -36,18 +37,29 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-8 mt-[-10vh]">
-      <div className="text-center space-y-2">
-        <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center rounded-full shadow-neu-extruded bg-card">
-          <div className="w-14 h-14 rounded-full shadow-neu-inset flex items-center justify-center">
+    <div className="w-full max-w-mobile mx-auto space-y-8 mt-[-10vh] px-2">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 320, damping: 28 }}
+        className="text-center space-y-2"
+      >
+        <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center rounded-full glass-panel">
+          <div className="w-14 h-14 rounded-full border border-white/10 bg-background/30 flex items-center justify-center">
             <div className="w-6 h-6 rounded-full bg-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]" />
           </div>
         </div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Gym Tracker</h1>
         <p className="text-muted-foreground uppercase tracking-wider text-xs font-medium">Sign in to your account</p>
-      </div>
+      </motion.div>
 
-      <form onSubmit={handleSubmit} className="space-y-5 p-6 rounded-3xl shadow-neu-extruded bg-card">
+      <motion.form
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.06, type: "spring", stiffness: 300, damping: 26 }}
+        onSubmit={handleSubmit}
+        className="space-y-5 p-6 rounded-3xl glass-panel"
+      >
         <div className="space-y-3">
           <Label htmlFor="email" className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Email</Label>
           <Input
@@ -87,7 +99,7 @@ export default function LoginPage() {
             )}
           </Button>
         </div>
-      </form>
+      </motion.form>
 
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}

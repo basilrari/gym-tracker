@@ -1,7 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const APP_PATHS = ["/", "/templates", "/workout", "/progress", "/leaderboard", "/onboarding"];
+const APP_PATHS = [
+  "/",
+  "/templates",
+  "/workout",
+  "/progress",
+  "/leaderboard",
+  "/onboarding",
+  "/history",
+  "/weight",
+];
 const AUTH_PATHS = ["/login", "/signup"];
 
 function isAppPath(pathname: string) {
@@ -14,6 +23,10 @@ function isAuthPath(pathname: string) {
 export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(request);
   const { pathname } = request.nextUrl;
+
+  if (pathname === "/offline") {
+    return response;
+  }
 
   if (isAppPath(pathname) && !user) {
     const url = request.nextUrl.clone();

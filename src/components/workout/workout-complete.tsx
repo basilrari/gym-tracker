@@ -39,15 +39,15 @@ export function WorkoutComplete({ workout }: WorkoutCompleteProps) {
     workingSets.reduce((sum, s) => sum + s.weight_kg * s.reps, 0) ?? 0;
 
   return (
-    <div className="p-4 space-y-10 max-w-lg mx-auto min-h-[80vh] flex flex-col justify-center">
+    <div className="p-4 space-y-10 max-w-mobile mx-auto w-full min-h-[80vh] flex flex-col justify-center pb-28">
       <motion.div
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 15 }}
         className="flex flex-col items-center text-center space-y-6"
       >
-        <div className="relative w-32 h-32 flex items-center justify-center rounded-full shadow-neu-extruded bg-card">
-          <div className="absolute inset-2 rounded-full shadow-neu-inset bg-card flex items-center justify-center">
+        <div className="relative w-32 h-32 flex items-center justify-center rounded-full glass-panel">
+          <div className="absolute inset-2 rounded-full border border-white/10 bg-background/30 flex items-center justify-center">
             <Check className="h-12 w-12 text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]" />
           </div>
         </div>
@@ -68,7 +68,7 @@ export function WorkoutComplete({ workout }: WorkoutCompleteProps) {
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total volume</span>
             <span className="font-bold text-xl text-primary">{Math.round(totalVolume)} kg</span>
           </div>
-          <div className="flex items-center justify-between p-4 rounded-2xl shadow-neu-inset">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-background/25 border border-white/5">
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Sets</span>
             <span className="font-bold text-xl">{workingSets.length}</span>
           </div>
@@ -109,7 +109,7 @@ export function WorkoutComplete({ workout }: WorkoutCompleteProps) {
       </motion.div>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="rounded-3xl">
+        <DialogContent className="rounded-3xl glass-panel border-white/20">
           <DialogHeader>
             <DialogTitle>Edit workout name</DialogTitle>
             <DialogDescription>
@@ -142,7 +142,7 @@ export function WorkoutComplete({ workout }: WorkoutCompleteProps) {
       </Dialog>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="rounded-3xl">
+        <DialogContent className="rounded-3xl glass-panel border-white/20">
           <DialogHeader>
             <DialogTitle>Delete this workout?</DialogTitle>
             <DialogDescription>

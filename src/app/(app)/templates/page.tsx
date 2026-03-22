@@ -22,7 +22,7 @@ export default async function TemplatesPage() {
   }
 
   return (
-    <div className="p-4 space-y-6 max-w-lg mx-auto pb-8">
+    <div className="p-4 space-y-6 max-w-mobile mx-auto w-full pb-28">
       <div className="text-center space-y-1 mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Routines</h1>
         <p className="text-muted-foreground text-xs uppercase tracking-wider">Your workout templates</p>
@@ -59,7 +59,7 @@ export default async function TemplatesPage() {
 
       <div className="space-y-4">
         {templates.map((template) => (
-          <div key={template.id} className="flex items-center justify-between gap-4 p-5 rounded-3xl bg-card shadow-neu-extruded group min-h-[80px]">
+          <div key={template.id} className="flex items-center justify-between gap-4 p-5 rounded-3xl glass-panel group min-h-[80px] active:scale-[0.99] transition-transform">
             <Link
               href={`/templates/${template.id}`}
               className="flex-1 flex flex-col justify-center gap-1 min-w-0 py-2"
@@ -77,7 +77,7 @@ export default async function TemplatesPage() {
                 type="submit" 
                 size="icon" 
                 variant="ghost" 
-                className="rounded-full h-14 w-14 shadow-neu-inset bg-card group-hover:shadow-neu-extruded active:shadow-neu-pressed transition-all min-h-[56px] min-w-[56px] touch-manipulation"
+                className="rounded-full h-14 w-14 border border-white/10 bg-background/30 group-hover:bg-background/50 transition-all min-h-[56px] min-w-[56px] touch-manipulation"
                 aria-label={`Start ${template.name} workout`}
               >
                 <Play className="h-6 w-6 text-primary ml-0.5 group-hover:drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)]" />
@@ -86,7 +86,7 @@ export default async function TemplatesPage() {
           </div>
         ))}
         {templates.length === 0 && (
-          <div className="p-8 rounded-3xl shadow-neu-inset text-center text-sm font-medium text-muted-foreground">
+          <div className="p-8 rounded-3xl glass-panel text-center text-sm font-medium text-muted-foreground">
             No routines yet. Create one or start an empty workout.
           </div>
         )}

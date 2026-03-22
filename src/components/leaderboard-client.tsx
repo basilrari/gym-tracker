@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Trophy, Flame } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { LeaderboardRow } from "@/lib/db/types";
 
 type LeaderboardClientProps = {
@@ -50,8 +49,7 @@ export function LeaderboardClient({
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="p-6 rounded-3xl bg-card shadow-neu-inset text-center relative overflow-hidden">
-            <div className="absolute inset-0 border border-primary/20 rounded-3xl" />
+          <div className="p-6 rounded-3xl glass-panel text-center relative overflow-hidden">
             <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Your Rank</p>
             <p className="text-4xl font-bold text-primary text-glow flex items-center justify-center gap-2">
               <Trophy className="h-8 w-8" />
@@ -61,7 +59,7 @@ export function LeaderboardClient({
         </motion.div>
       )}
 
-      <div className="flex rounded-full shadow-neu-inset bg-card p-1">
+      <div className="flex rounded-full glass-panel p-1 border-white/10">
         <button
           type="button"
           onClick={() => setPeriod("7d")}
@@ -82,7 +80,7 @@ export function LeaderboardClient({
         </button>
       </div>
 
-      <div className="flex rounded-full shadow-neu-inset bg-card p-1">
+      <div className="flex rounded-full glass-panel p-1 border-white/10">
         <button
           type="button"
           onClick={() => setMetric("consistency")}
@@ -113,14 +111,14 @@ export function LeaderboardClient({
         <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2">
           {metric === "consistency" ? "Top Workouts" : "Top Volume"} ({period})
         </h2>
-        <div className="p-4 rounded-3xl bg-card shadow-neu-extruded space-y-3">
+        <div className="p-4 rounded-3xl glass-panel space-y-3">
           {rows.map((row) => (
             <div
               key={row.user_id}
-              className={`flex justify-between items-center p-4 rounded-2xl transition-all ${
-                row.user_id === currentUserId 
-                  ? "shadow-neu-extruded bg-background/50 border border-primary/20" 
-                  : "shadow-neu-inset bg-card"
+              className={`flex justify-between items-center p-4 rounded-2xl transition-all border ${
+                row.user_id === currentUserId
+                  ? "bg-primary/10 border-primary/30"
+                  : "bg-background/20 border-white/5"
               }`}
             >
               <span className="font-bold text-base flex items-center gap-3">

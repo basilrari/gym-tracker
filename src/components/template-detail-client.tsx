@@ -423,7 +423,7 @@ export function TemplateDetailClient({
           <Calendar className="h-3.5 w-3.5" />
           Scheduled days
         </h2>
-        <div className="p-3 rounded-2xl bg-card shadow-neu-extruded">
+        <div className="p-3 rounded-2xl glass-panel">
           <div className="flex flex-wrap gap-1.5 justify-center">
             {DAY_LABELS.map(({ value, label }) => (
               <button
@@ -457,7 +457,7 @@ export function TemplateDetailClient({
             Add exercise
           </Button>
         </div>
-        <div className="p-4 rounded-3xl bg-card shadow-neu-extruded space-y-4">
+        <div className="p-4 rounded-3xl glass-panel space-y-4">
           {exercises.map((te, i) => (
             <motion.div
               key={te.id}

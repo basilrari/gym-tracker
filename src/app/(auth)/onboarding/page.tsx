@@ -64,13 +64,13 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-8 mt-4 mb-12">
+    <div className="w-full max-w-mobile mx-auto px-2 space-y-8 mt-4 mb-12">
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-bold text-foreground">Complete Profile</h1>
         <p className="text-muted-foreground text-xs uppercase tracking-wider">Set up your gym tracker</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5 p-6 rounded-3xl shadow-neu-extruded bg-card">
+      <form onSubmit={handleSubmit} className="space-y-5 p-6 rounded-3xl glass-panel">
         <div className="space-y-3">
           <Label htmlFor="username" className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Username *</Label>
           <Input
@@ -94,7 +94,7 @@ export default function OnboardingPage() {
         </div>
         <div className="space-y-3">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Units</Label>
-          <div className="flex rounded-full shadow-neu-inset bg-card p-1">
+          <div className="flex rounded-full glass-panel p-1 border-white/10">
             <button
               type="button"
               className={`flex-1 py-2 px-4 rounded-full text-sm font-bold transition-all duration-250 ${

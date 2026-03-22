@@ -1,5 +1,4 @@
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- UUID defaults use gen_random_uuid() (built-in on Postgres 13+; no uuid-ossp / search_path issues on Supabase)
 
 -- Profiles (extends auth.users)
 CREATE TABLE profiles (
@@ -36,7 +35,7 @@ CREATE TABLE exercises (
 
 -- Workout templates
 CREATE TABLE workout_templates (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
@@ -46,7 +45,7 @@ CREATE TABLE workout_templates (
 
 -- Template exercises (order, sets, reps for a template)
 CREATE TABLE template_exercises (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   template_id UUID NOT NULL REFERENCES workout_templates(id) ON DELETE CASCADE,
   exercise_id INTEGER NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
   order_index INTEGER NOT NULL,
@@ -59,7 +58,7 @@ CREATE TABLE template_exercises (
 
 -- Workouts (instance of a session)
 CREATE TABLE workouts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   template_id UUID REFERENCES workout_templates(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
@@ -72,7 +71,7 @@ CREATE TABLE workouts (
 
 -- Workout sets (granular set-level logging)
 CREATE TABLE workout_sets (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workout_id UUID NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
   exercise_id INTEGER NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
   set_index INTEGER NOT NULL,
@@ -87,7 +86,7 @@ CREATE TABLE workout_sets (
 
 -- Body measurements
 CREATE TABLE body_measurements (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   date DATE NOT NULL,
   weight_kg NUMERIC,
@@ -102,7 +101,7 @@ CREATE TABLE body_measurements (
 
 -- Achievements
 CREATE TABLE achievements (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
@@ -111,7 +110,7 @@ CREATE TABLE achievements (
 
 -- User achievements
 CREATE TABLE user_achievements (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   achievement_id UUID NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
   earned_at TIMESTAMPTZ DEFAULT NOW()
@@ -119,7 +118,7 @@ CREATE TABLE user_achievements (
 
 -- Leaderboard metrics (pre-computed for fast leaderboards)
 CREATE TABLE leaderboard_metrics (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   period TEXT NOT NULL CHECK (period IN ('7d', '30d', 'all_time')),
   start_date DATE,

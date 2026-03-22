@@ -74,7 +74,7 @@ export function RestTimer({
   const isLow = remaining <= 10;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-40 p-4 bg-card rounded-3xl shadow-neu-extruded max-w-sm mx-auto">
+    <div className="fixed bottom-4 left-4 right-4 z-40 p-4 glass-panel max-w-sm mx-auto w-[calc(100%-2rem)]">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Rest Timer</span>
         <div className="flex items-center gap-1">
@@ -96,7 +96,7 @@ export function RestTimer({
             type="button"
             variant="ghost"
             size="icon"
-            className="rounded-full shadow-neu-extruded active:shadow-neu-pressed h-8 w-8 text-muted-foreground"
+            className="rounded-full border border-white/10 bg-background/30 h-8 w-8 text-muted-foreground"
             onClick={onSkip}
           >
             <SkipForward className="h-3 w-3" />
@@ -113,7 +113,7 @@ export function RestTimer({
         >
           {Math.floor(remaining / 60)}:{(remaining % 60).toString().padStart(2, "0")}
         </motion.span>
-        <div className="flex-1 h-3 bg-card shadow-neu-inset rounded-full overflow-hidden p-0.5">
+        <div className="flex-1 h-3 bg-background/40 border border-white/10 rounded-full overflow-hidden p-0.5">
           <motion.div
             className="h-full bg-primary rounded-full shadow-[0_0_8px_hsl(var(--primary)/0.5)]"
             initial={false}

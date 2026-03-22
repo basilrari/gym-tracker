@@ -1,7 +1,11 @@
 export default function ProgressLoading() {
   return (
-    <div className="p-4 flex items-center justify-center min-h-[200px]">
-      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    <div className="px-4 py-6 space-y-6 max-w-mobile mx-auto w-full animate-pulse">
+      <div className="h-8 w-36 bg-muted/30 rounded-xl mx-auto" />
+      <div className="glass-panel p-4 h-64 rounded-3xl" />
+      <div className="glass-panel p-4 h-32 rounded-3xl" />
+      <div className="glass-panel p-4 h-56 rounded-3xl" />
+      <div className="glass-panel p-4 h-56 rounded-3xl" />
     </div>
   );
 }
