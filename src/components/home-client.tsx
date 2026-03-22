@@ -13,8 +13,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import type { Profile, WorkoutTemplate, LeaderboardRow } from "@/lib/db/types";
-import type { WeekStats } from "@/lib/db/analytics";
+import type { Profile, WorkoutTemplate, LeaderboardRow, BodyWeightEntry } from "@/lib/db/types";
+import type { WeekStats, TrainingDay } from "@/lib/db/analytics";
+import {
+  Area,
+  AreaChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import Link from "next/link";
 
 type HomeClientProps = {
@@ -30,6 +38,9 @@ type HomeClientProps = {
     templateId?: string | null,
     name?: string
   ) => Promise<void>;
+  trainingDays30: TrainingDay[];
+  volumeSparkline7: number[];
+  bodyWeightTrend: BodyWeightEntry[];
 };
 
 export function HomeClient({
@@ -42,6 +53,9 @@ export function HomeClient({
   myRank,
   suggestedTemplate,
   startWorkoutAction,
+  trainingDays30,
+  volumeSparkline7,
+  bodyWeightTrend,
 }: HomeClientProps) {
   const [mode, setMode] = useState<"me" | "community">("me");
   const [confirmWorkout, setConfirmWorkout] = useState<{ templateId: string | null; name: string } | null>(null);
@@ -67,8 +81,11 @@ export function HomeClient({
       
   const progressPercent = Math.min(100, Math.round((weekStats.workoutsThisWeek / 5) * 100));
 
+  const volChart = volumeSparkline7.map((v, i) => ({ i: `D${i + 1}`, v }));
+  const bwChart = bodyWeightTrend.map((e) => ({ d: e.date.slice(5), w: e.weight_kg }));
+
   return (
-    <div className="px-6 py-6 space-y-10 max-w-lg mx-auto">
+    <div className="px-4 py-6 space-y-8 max-w-mobile mx-auto w-full">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">
           {profile?.display_name || profile?.username || "Gym Tracker"}
@@ -76,7 +93,7 @@ export function HomeClient({
         <SignOutButton />
       </div>
 
-      <div className="flex rounded-full shadow-neu-inset bg-card p-1">
+      <div className="flex rounded-full glass-panel p-1 border-white/15">
         <button
           type="button"
           onClick={() => setMode("me")}
@@ -104,8 +121,8 @@ export function HomeClient({
       {mode === "me" ? (
         <div className="space-y-10">
           <div className="flex flex-col items-center justify-center relative py-8">
-            <div className="relative w-56 h-56 flex items-center justify-center rounded-full shadow-neu-extruded bg-card">
-              <div className="absolute inset-3 rounded-full shadow-neu-inset bg-card flex flex-col items-center justify-center overflow-hidden">
+            <div className="relative w-56 h-56 flex items-center justify-center rounded-full glass-panel">
+              <div className="absolute inset-3 rounded-full bg-background/30 border border-white/10 flex flex-col items-center justify-center overflow-hidden">
                 {suggestedTemplate ? (
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Up Next</p>
                 ) : (
@@ -151,25 +168,125 @@ export function HomeClient({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 px-2 pt-10">
-            <div className="flex flex-col items-center">
-              <Flame className="h-5 w-5 text-primary mb-1 drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)]" />
-              <span className="text-xl font-bold">{streak}</span>
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Streak</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <Dumbbell className="h-5 w-5 text-primary mb-1 drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)]" />
-              <span className="text-xl font-bold">{weekStats.workoutsThisWeek}</span>
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Workouts</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <TrendingUp className="h-5 w-5 text-primary mb-1 drop-shadow-[0_0_5px_hsl(var(--primary)/0.5)]" />
-              <span className="text-xl font-bold">{volumeDiff >= 0 ? "+" : ""}{volumeDiff.toFixed(0)}%</span>
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Volume</span>
-            </div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 320, damping: 28 }}
+            className="grid grid-cols-3 gap-3 px-1 pt-10"
+          >
+            {[
+              { icon: Flame, val: streak, label: "Streak" },
+              { icon: Dumbbell, val: weekStats.workoutsThisWeek, label: "This week" },
+              {
+                icon: TrendingUp,
+                val: `${volumeDiff >= 0 ? "+" : ""}${volumeDiff.toFixed(0)}%`,
+                label: "Vol vs last",
+              },
+            ].map((item) => (
+              <div key={item.label} className="glass-panel py-4 px-2 flex flex-col items-center text-center">
+                <item.icon className="h-5 w-5 text-primary mb-1" />
+                <span className="text-lg font-bold tabular-nums">{item.val}</span>
+                <span className="text-[9px] uppercase tracking-wider text-muted-foreground">{item.label}</span>
+              </div>
+            ))}
+          </motion.div>
 
-          <div className="space-y-4 pt-6 pb-10">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05, type: "spring", stiffness: 300, damping: 26 }}
+            className="glass-panel p-4 space-y-3"
+          >
+            <div className="flex justify-between items-center">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">30-day consistency</h3>
+              <span className="text-xs text-primary font-medium">
+                {trainingDays30.filter((d) => d.trained).length} active days
+              </span>
+            </div>
+            <div className="grid grid-cols-10 gap-1">
+              {trainingDays30.map((d) => (
+                <motion.div
+                  key={d.date}
+                  title={d.date}
+                  initial={false}
+                  animate={{ scale: d.trained ? 1 : 0.92 }}
+                  className={`aspect-square rounded-md border border-white/5 ${
+                    d.trained ? "bg-primary/85 shadow-[0_0_8px_hsl(var(--primary)/0.35)]" : "bg-muted/25"
+                  }`}
+                />
+              ))}
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08, type: "spring", stiffness: 300, damping: 26 }}
+            className="glass-panel p-4 h-44"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">7-day volume</p>
+            {volChart.some((x) => x.v > 0) ? (
+              <ResponsiveContainer width="100%" height="85%">
+                <AreaChart data={volChart} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="homeVol" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="i" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={32} />
+                  <Tooltip
+                    formatter={(v: number) => [`${Math.round(v)} kg`, "Volume"]}
+                    contentStyle={{
+                      borderRadius: 12,
+                      background: "hsl(var(--card) / 0.95)",
+                      border: "1px solid hsl(var(--border))",
+                    }}
+                  />
+                  <Area type="monotone" dataKey="v" stroke="hsl(var(--primary))" fill="url(#homeVol)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-sm text-muted-foreground py-10 text-center">Complete workouts to see volume.</p>
+            )}
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 26 }}
+            className="glass-panel p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Body weight</p>
+              {bodyWeightTrend.length > 0 ? (
+                <p className="text-lg font-bold mt-1">{bodyWeightTrend[bodyWeightTrend.length - 1]?.weight_kg} kg</p>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-1">No entries yet</p>
+              )}
+            </div>
+            <div className="h-20 w-full sm:w-40 flex-shrink-0">
+              {bwChart.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={bwChart} margin={{ top: 4, right: 0, left: -28, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="homeBw" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <Area type="monotone" dataKey="w" stroke="hsl(var(--primary))" fill="url(#homeBw)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : null}
+            </div>
+            <Button asChild variant="outline" className="rounded-full shrink-0 border-white/20">
+              <Link href="/weight">Log weight</Link>
+            </Button>
+          </motion.div>
+
+          <div className="space-y-4 pt-2 pb-10">
             <div className="flex justify-between items-end px-2">
               <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your Routines</h2>
               <Link href="/templates" className="text-xs text-primary hover:underline font-medium">View All</Link>
@@ -181,7 +298,7 @@ export function HomeClient({
                    initial={{ opacity: 0, x: -10 }}
                    animate={{ opacity: 1, x: 0 }}
                    transition={{ delay: i * 0.1 }}
-                   className="flex items-center justify-between gap-4 p-5 rounded-3xl bg-card shadow-neu-extruded active:shadow-neu-pressed active:scale-[0.98] transition-all cursor-pointer group touch-manipulation min-h-[80px]"
+                   className="flex items-center justify-between gap-4 p-5 rounded-3xl glass-panel active:scale-[0.98] transition-all cursor-pointer group touch-manipulation min-h-[80px]"
                    onClick={() => setConfirmWorkout({ templateId: t.id, name: t.name })}
                  >
                     <div className="min-w-0 flex-1 py-1">
@@ -194,7 +311,7 @@ export function HomeClient({
                  </motion.div>
                ))}
                {templates.length === 0 && (
-                 <div className="p-6 rounded-3xl shadow-neu-inset text-center text-sm text-muted-foreground">
+                 <div className="p-6 rounded-3xl glass-panel text-center text-sm text-muted-foreground">
                    No routines yet. Create one or start an empty workout.
                  </div>
                )}
@@ -204,7 +321,7 @@ export function HomeClient({
       ) : (
         <div className="space-y-8 pt-4 pb-10">
           {myRank && (
-            <div className="p-6 rounded-3xl bg-card shadow-neu-inset text-center relative overflow-hidden">
+            <div className="p-6 rounded-3xl glass-panel text-center relative overflow-hidden">
               <div className="absolute inset-0 border border-primary/20 rounded-3xl" />
               <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Your Rank (7d)</p>
               <p className="text-4xl font-bold text-primary text-glow flex items-center justify-center gap-2">
@@ -216,11 +333,11 @@ export function HomeClient({
           
           <div className="space-y-2">
             <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2">Consistency (7d)</h2>
-            <div className="p-4 rounded-3xl bg-card shadow-neu-extruded space-y-3">
+            <div className="p-4 rounded-3xl glass-panel space-y-3">
               {leaderboardConsistency.slice(0, 5).map((row, i) => (
                 <div
                   key={row.user_id}
-                  className="flex justify-between items-center p-3 rounded-2xl shadow-neu-inset"
+                  className="flex justify-between items-center p-3 rounded-2xl bg-background/25 border border-white/5"
                 >
                   <span className="font-medium text-sm flex items-center gap-2">
                     <span className="text-primary font-bold w-4">{row.rank}</span>
@@ -239,11 +356,11 @@ export function HomeClient({
 
           <div className="space-y-2">
             <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2">Volume (7d)</h2>
-            <div className="p-4 rounded-3xl bg-card shadow-neu-extruded space-y-3">
+            <div className="p-4 rounded-3xl glass-panel space-y-3">
               {leaderboardVolume.slice(0, 5).map((row, i) => (
                 <div
                   key={row.user_id}
-                  className="flex justify-between items-center p-3 rounded-2xl shadow-neu-inset"
+                  className="flex justify-between items-center p-3 rounded-2xl bg-background/25 border border-white/5"
                 >
                   <span className="font-medium text-sm flex items-center gap-2">
                     <span className="text-primary font-bold w-4">{row.rank}</span>
@@ -264,7 +381,7 @@ export function HomeClient({
 
       {/* Start Workout Confirmation Dialog */}
       <Dialog open={!!confirmWorkout} onOpenChange={(o) => !o && setConfirmWorkout(null)}>
-        <DialogContent className="rounded-3xl max-w-sm mx-auto">
+        <DialogContent className="rounded-3xl max-w-sm mx-auto glass-panel border-white/20">
           <DialogHeader>
             <DialogTitle className="text-center text-xl">Ready to Workout?</DialogTitle>
             <DialogDescription className="text-center text-sm text-muted-foreground">
@@ -273,7 +390,7 @@ export function HomeClient({
           </DialogHeader>
           
           <div className="py-4 space-y-4">
-            <div className="p-4 rounded-2xl bg-card shadow-neu-inset text-center">
+            <div className="p-4 rounded-2xl bg-background/30 border border-white/10 text-center">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Workout</p>
               <p className="font-bold text-lg break-words">{confirmWorkout?.name}</p>
             </div>

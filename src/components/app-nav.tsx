@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Dumbbell, History, BarChart3, Trophy, LogOut } from "lucide-react";
+import { Home, Dumbbell, History, BarChart3, Scale, Trophy, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ const navItems = [
   { href: "/templates", label: "Routines", icon: Dumbbell },
   { href: "/history", label: "History", icon: History },
   { href: "/progress", label: "Progress", icon: BarChart3 },
+  { href: "/weight", label: "Weight", icon: Scale },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ];
 
