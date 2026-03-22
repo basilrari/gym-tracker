@@ -92,41 +92,99 @@ export async function getExerciseProgression(
   range: "7d" | "30d" | "all" = "30d"
 ): Promise<ExerciseProgressionPoint[]> {
   const supabase = await createClient();
-  let query = supabase
+  const fromIso =
+    range === "all"
+      ? null
+      : (() => {
+          const days = range === "7d" ? 7 : 30;
+          const from = new Date();
+          from.setDate(from.getDate() - days);
+          return from.toISOString();
+        })();
+
+  let legacyQuery = supabase
     .from("workouts")
     .select("id, start_time")
     .eq("user_id", userId)
     .not("end_time", "is", null)
     .order("start_time", { ascending: true });
+  if (fromIso) legacyQuery = legacyQuery.gte("start_time", fromIso);
 
-  if (range !== "all") {
-    const days = range === "7d" ? 7 : 30;
-    const from = new Date();
-    from.setDate(from.getDate() - days);
-    query = query.gte("start_time", from.toISOString());
+  let sessionQuery = supabase
+    .from("workout_sessions")
+    .select("id, started_at")
+    .eq("user_id", userId)
+    .not("ended_at", "is", null)
+    .order("started_at", { ascending: true });
+  if (fromIso) sessionQuery = sessionQuery.gte("started_at", fromIso);
+
+  const [{ data: workouts, error: wError }, { data: sessions, error: sessErr }] = await Promise.all([
+    legacyQuery,
+    sessionQuery,
+  ]);
+  if (wError) throw wError;
+  if (sessErr) throw sessErr;
+
+  const points: ExerciseProgressionPoint[] = [];
+
+  if (workouts?.length) {
+    const { data: sets, error: sError } = await supabase
+      .from("workout_sets")
+      .select("workout_id, weight_kg, reps, is_warmup")
+      .in(
+        "workout_id",
+        workouts.map((w) => w.id)
+      )
+      .eq("exercise_id", exerciseId)
+      .eq("is_warmup", false);
+    if (sError) throw sError;
+    const workoutMap = new Map(workouts.map((w) => [w.id, w.start_time]));
+    for (const s of sets ?? []) {
+      points.push({
+        date: workoutMap.get(s.workout_id)?.slice(0, 10) ?? "",
+        weight: Number(s.weight_kg),
+        volume: Number(s.weight_kg) * s.reps,
+        reps: s.reps,
+      });
+    }
   }
 
-  const { data: workouts, error: wError } = await query;
-  if (wError) throw wError;
-  if (!workouts?.length) return [];
+  if (sessions?.length) {
+    const sessionIds = sessions.map((s) => s.id);
+    const sessionTime = new Map(sessions.map((s) => [s.id, s.started_at]));
+    const { data: logs, error: lErr } = await supabase
+      .from("exercise_logs")
+      .select("id, session_id")
+      .in("session_id", sessionIds)
+      .eq("exercise_id", exerciseId);
+    if (lErr) throw lErr;
+    if (logs?.length) {
+      const logToSession = new Map(logs.map((l) => [l.id, l.session_id as string]));
+      const logIds = logs.map((l) => l.id);
+      const { data: sessSets, error: ssErr } = await supabase
+        .from("sets")
+        .select("exercise_log_id, weight_kg, reps, tags")
+        .in("exercise_log_id", logIds);
+      if (ssErr) throw ssErr;
+      for (const s of sessSets ?? []) {
+        const tags = Array.isArray(s.tags) ? s.tags.map(String) : [];
+        if (tags.includes("warmup")) continue;
+        const sid = logToSession.get(s.exercise_log_id as string);
+        const started = sid ? sessionTime.get(sid) : null;
+        const w = s.weight_kg != null ? Number(s.weight_kg) : 0;
+        const r = s.reps != null ? Number(s.reps) : 0;
+        points.push({
+          date: started?.slice(0, 10) ?? "",
+          weight: w,
+          volume: w * r,
+          reps: r,
+        });
+      }
+    }
+  }
 
-  const { data: sets, error: sError } = await supabase
-    .from("workout_sets")
-    .select("workout_id, weight_kg, reps, is_warmup")
-    .in("workout_id", workouts.map((w) => w.id))
-    .eq("exercise_id", exerciseId)
-    .eq("is_warmup", false);
-
-  if (sError) throw sError;
-
-  const workoutMap = new Map(workouts.map((w) => [w.id, w.start_time]));
-
-  return (sets ?? []).map((s) => ({
-    date: workoutMap.get(s.workout_id)?.slice(0, 10) ?? "",
-    weight: Number(s.weight_kg),
-    volume: Number(s.weight_kg) * s.reps,
-    reps: s.reps,
-  }));
+  points.sort((a, b) => a.date.localeCompare(b.date));
+  return points;
 }
 
 export async function getStreak(userId: string): Promise<number> {

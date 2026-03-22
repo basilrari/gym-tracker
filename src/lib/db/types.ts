@@ -85,6 +85,8 @@ export type Workout = {
   notes: string | null;
   total_volume_kg: number | null;
   created_at: string;
+  /** `session` = row in `workout_sessions` (v2); `legacy` = `workouts` table */
+  source?: "session" | "legacy";
 };
 
 export type WorkoutSet = {

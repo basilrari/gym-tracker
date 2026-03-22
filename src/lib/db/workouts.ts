@@ -31,6 +31,7 @@ function sessionToWorkout(s: {
     notes: s.notes,
     total_volume_kg: s.total_volume_kg,
     created_at: s.created_at,
+    source: "session",
   };
 }
 
@@ -107,7 +108,7 @@ export async function getWorkout(workoutId: string): Promise<Workout | null> {
     .single();
 
   if (error || !data) return null;
-  return data as Workout;
+  return { ...(data as Workout), source: "legacy" };
 }
 
 export async function getWorkoutWithSets(
@@ -177,7 +178,7 @@ export async function getUserWorkouts(
 
   const { data, error } = await query;
   if (error) throw error;
-  const legacy = (data ?? []) as Workout[];
+  const legacy = (data ?? []).map((w) => ({ ...(w as Workout), source: "legacy" as const }));
 
   const merged = [...fromSessions, ...legacy].sort(
     (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()

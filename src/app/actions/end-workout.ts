@@ -33,12 +33,14 @@ export async function endWorkoutAction(workoutId: string) {
   redirect(`/workout/${workoutId}/complete`);
 }
 
-export async function deleteWorkoutAction(workoutId: string) {
+export async function deleteWorkoutAction(workoutId: string, redirectTo = "/") {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   await deleteWorkout(workoutId);
-  redirect("/");
+  revalidatePath("/history");
+  revalidatePath("/progress");
+  redirect(redirectTo);
 }
 
 /** For use in forms: pass workoutId as form field. */
@@ -50,14 +52,25 @@ export async function endWorkoutFromForm(formData: FormData) {
 /** For use in forms: pass workoutId as form field. */
 export async function deleteWorkoutFromForm(formData: FormData) {
   const id = formData.get("workoutId");
-  if (typeof id === "string" && id) await deleteWorkoutAction(id);
+  const next = formData.get("redirectTo");
+  const redirectTo = typeof next === "string" && next.startsWith("/") ? next : "/";
+  if (typeof id === "string" && id) await deleteWorkoutAction(id, redirectTo);
 }
 
-export async function updateWorkoutAction(workoutId: string, name: string) {
+export async function updateWorkoutAction(
+  workoutId: string,
+  name: string,
+  notes?: string | null
+) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  await updateWorkout(workoutId, { name: name.trim() || "Workout" });
+  const patch: Parameters<typeof updateWorkout>[1] = {
+    name: name.trim() || "Workout",
+  };
+  if (notes !== undefined) patch.notes = notes;
+  await updateWorkout(workoutId, patch);
   revalidatePath("/history");
   revalidatePath("/");
+  revalidatePath("/progress");
 }
